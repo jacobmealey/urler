@@ -143,6 +143,7 @@ struct option {
   FILE *url;
   bool urlopen;
   bool jsonout;
+  bool iterate;
   unsigned char output;
 };
 
@@ -285,6 +286,12 @@ static int getarg(struct option *op,
   }
   else if(!strcmp("--json", flag))
     op->jsonout = true;
+  else if(checkoptarg("--iterate", flag, arg)) {
+      fprintf(stderr, "Iterating to iterate %s\n", arg);
+      op->iterate = 1;
+      *usedarg = 1;
+
+  }
   else
     return 1;  /* unrecognized option */
   return 0;
@@ -598,6 +605,10 @@ int main(int argc, const char **argv)
       argc--;
       argv++;
     }
+  }
+  if(o.iterate) {
+      fprintf(stderr, "iterating in MAIN\n");
+      return 0;
   }
 
   if(o.url) {
