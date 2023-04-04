@@ -254,23 +254,32 @@ static int iterate(struct option *op, const char *arg) {
         printf("Parsing Hosts\n");
         slist = op->url_list;
         offset = 5;
-    } else if(!strncmp("ports=", arg, 6)) {
+    } else if(!strncmp("ports=", arg, 5)) {
         printf("Parsing Ports\n");
-        offset = 6;
-    } else {
+        offset = 5;
+    } else if(offset == 0 || offset >= arg_str_len){
         errorf(ERROR_ITER, "Missing arguments for iterator %s", arg);
     }
 
-    /* check to ensure there are genuine arguments passed. prevent `ports=` */
-    if(offset >= arg_str_len) {
-        errorf(ERROR_ITER, "Missing arguments for iterator %s", arg);
-    }
     
     /* parse individual tokens from arg */
-    for(int i = offset; i < arg_str_len; i++) {
-
+    offset += 1;
+    char buff[512]; /* single token */
+    const char *ptr = &arg[offset];
+    const char *_arg = arg + offset;
+    while(*ptr != '\0') {
+        if(*ptr == ' ' ) {
+            strncpy(buff, _arg, ptr - _arg);
+            buff[ptr - _arg] = '\0';
+            _arg = ptr + 1;
+            printf("Buffer: %s!\n", buff);
+        } else if(*(ptr + 1)  == '\0') {
+            strncpy(buff, _arg, ptr - _arg + 1);
+            buff[ptr - _arg + 1] = '\0';
+            printf("Buffer: %s!\n", buff);
+        }
+        ptr++;
     }
-
     return 0;
 }
 
