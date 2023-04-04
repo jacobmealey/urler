@@ -77,6 +77,7 @@ static const struct var variables[] = {
 #define ERROR_SET    5 /* a --set problem */
 #define ERROR_MEM    6 /* out of memory */
 #define ERROR_URL    7 /* could not get a URL out of the set components */
+#define ERROR_ITER   8 /* unable to find arguments for iterator */
 
 static void warnf(char *fmt, ...)
 {
@@ -242,6 +243,37 @@ static bool checkoptarg(const char *str,
   return false;
 }
 
+static int iterate(struct option *op, const char *arg) {
+    printf("running running. %s\n", arg);
+    struct curl_slist *slist; /* parameter in op to iterate */
+    int offset = 0; /* offset from start to the beginning of the arguments */
+    int arg_str_len = strlen(arg); /* total length of arguments */
+    
+    /* check which paramter is being iterated */
+    if(!strncmp("hosts=", arg, 5)) {
+        printf("Parsing Hosts\n");
+        slist = op->url_list;
+        offset = 5;
+    } else if(!strncmp("ports=", arg, 6)) {
+        printf("Parsing Ports\n");
+        offset = 6;
+    } else {
+        errorf(ERROR_ITER, "Missing arguments for iterator %s", arg);
+    }
+
+    /* check to ensure there are genuine arguments passed. prevent `ports=` */
+    if(offset >= arg_str_len) {
+        errorf(ERROR_ITER, "Missing arguments for iterator %s", arg);
+    }
+    
+    /* parse individual tokens from arg */
+    for(int i = offset; i < arg_str_len; i++) {
+
+    }
+
+    return 0;
+}
+
 static int getarg(struct option *op,
                   const char *flag,
                   const char *arg,
@@ -288,9 +320,9 @@ static int getarg(struct option *op,
     op->jsonout = true;
   else if(checkoptarg("--iterate", flag, arg)) {
       fprintf(stderr, "Iterating to iterate %s\n", arg);
+      iterate(op, arg);
       op->iterate = 1;
       *usedarg = 1;
-
   }
   else
     return 1;  /* unrecognized option */
