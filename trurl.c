@@ -144,7 +144,7 @@ struct option {
   FILE *url;
   bool urlopen;
   bool jsonout;
-  bool iterate;
+  struct option *iterate;
   unsigned char output;
 };
 
@@ -243,19 +243,29 @@ static bool checkoptarg(const char *str,
   return false;
 }
 
+/* returns address of most recently added option */
+struct option *addoptiter(struct option *o){
+    if(o->iterate)
+        addoptiter(o->iterate);
+
+    struct option *opt = malloc(sizeof(struct option));
+    memcpy(opt, o, sizeof(struct option));
+    o->iterate = opt;
+    opt->iterate = NULL;
+    return opt;
+}
+
 static int iterate(struct option *op, const char *arg) {
-    printf("running running. %s\n", arg);
-    struct curl_slist *slist; /* parameter in op to iterate */
     int offset = 0; /* offset from start to the beginning of the arguments */
     int arg_str_len = strlen(arg); /* total length of arguments */
+    char *buffer = malloc(4096 * sizeof(char));
     
     /* check which paramter is being iterated */
     if(!strncmp("hosts=", arg, 5)) {
-        printf("Parsing Hosts\n");
-        slist = op->url_list;
+        strncpy(buffer, "host=", 6);
         offset = 5;
     } else if(!strncmp("ports=", arg, 5)) {
-        printf("Parsing Ports\n");
+        strncpy(buffer, "port=", 6);
         offset = 5;
     } else if(offset == 0 || offset >= arg_str_len){
         errorf(ERROR_ITER, "Missing arguments for iterator %s", arg);
@@ -264,19 +274,26 @@ static int iterate(struct option *op, const char *arg) {
     
     /* parse individual tokens from arg */
     offset += 1;
-    char buff[512]; /* single token */
     const char *ptr = &arg[offset];
     const char *_arg = arg + offset;
+    struct option *new_opt;
     while(*ptr != '\0') {
         if(*ptr == ' ' ) {
-            strncpy(buff, _arg, ptr - _arg);
-            buff[ptr - _arg] = '\0';
+            strncpy(buffer + offset - 1, _arg, ptr - _arg);
+            buffer[offset + ptr - _arg] = '\0';
             _arg = ptr + 1;
-            printf("Buffer: %s!\n", buff);
+            setadd(op, buffer);
+            new_opt = addoptiter(op);
+            new_opt->set_list = NULL;
+            op = new_opt;
         } else if(*(ptr + 1)  == '\0') {
-            strncpy(buff, _arg, ptr - _arg + 1);
-            buff[ptr - _arg + 1] = '\0';
-            printf("Buffer: %s!\n", buff);
+            strncpy(buffer + offset - 1, _arg, ptr - _arg + 1);
+            buffer[offset + ptr - _arg + 1] = '\0';
+            setadd(op, buffer);
+            new_opt = addoptiter(op);
+            new_opt->set_list = NULL;
+            new_opt->iterate = NULL;
+            op = new_opt;
         }
         ptr++;
     }
@@ -328,9 +345,8 @@ static int getarg(struct option *op,
   else if(!strcmp("--json", flag))
     op->jsonout = true;
   else if(checkoptarg("--iterate", flag, arg)) {
-      fprintf(stderr, "Iterating to iterate %s\n", arg);
       iterate(op, arg);
-      op->iterate = 1;
+      //op->iterate = 1;
       *usedarg = 1;
   }
   else
@@ -647,10 +663,6 @@ int main(int argc, const char **argv)
       argv++;
     }
   }
-  if(o.iterate) {
-      fprintf(stderr, "iterating in MAIN\n");
-      return 0;
-  }
 
   if(o.url) {
     /* this is a file to read URLs from */
@@ -662,7 +674,12 @@ int main(int argc, const char **argv)
           /* CRLF detected */
           eol--;
         *eol = 0; /* end of URL */
-        singleurl(&o, buffer);
+        
+        struct option *opt = &o;
+        while(opt->iterate != NULL){
+           singleurl(opt, buffer);
+           opt= opt->iterate;
+        }
       }
       else {
         /* no newline or no content, skip */
@@ -675,13 +692,21 @@ int main(int argc, const char **argv)
     /* not reading URLs from a file */
     node = o.url_list;
     do {
+      struct option *opt = &o;
       if(node) {
         const char *url = node->data;
-        singleurl(&o, url);
+        do{
+           singleurl(opt, url);
+           opt = opt->iterate;
+        } while(opt->iterate);
         node = node->next;
       }
       else
-        singleurl(&o, NULL);
+        do{
+           singleurl(opt, NULL);
+           opt = opt->iterate;
+        }while(opt->iterate);
+
     } while(node);
   }
   /* we're done with libcurl, so clean it up */
