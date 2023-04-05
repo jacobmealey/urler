@@ -268,17 +268,23 @@ static int optcleanup(struct option *o) {
 static int iterate(struct option *op, const char *arg) {
     int offset = 0; /* offset from start to the beginning of the arguments */
     int arg_str_len = strlen(arg); /* total length of arguments */
-    char buffer[4096];// = malloc(4096 * sizeof(char));
+    char buffer[4096];
     memset(buffer, '\0', 4096);
     
+    printf("%d\n", arg_str_len);
     /* check which paramter is being iterated */
     if(!strncmp("hosts=", arg, 5)) {
         strncpy(buffer, "host=", 6);
         offset = 5;
-    } else if(!strncmp("ports=", arg, 5)) {
+    } else if(!strncmp("ports=", arg, 6)) {
         strncpy(buffer, "port=", 6);
         offset = 5;
-    } else if(offset == 0 || offset >= arg_str_len){
+    } else if(!strncmp("schemes=", arg, 8)) {
+        strncpy(buffer, "scheme=", 8);
+        offset = 7;
+    }
+
+    if(offset == 0 || offset + 1 >= arg_str_len){
         errorf(ERROR_ITER, "Missing arguments for iterator %s", arg);
     }
 
@@ -286,24 +292,24 @@ static int iterate(struct option *op, const char *arg) {
     /* parse individual tokens from arg */
     offset += 1;
     const char *ptr = &arg[offset];
-    const char *_arg = arg + offset;
+    const char *_arg = ptr;
     struct option *new_opt;
     while(*ptr != '\0') {
         if(*ptr == ' ' ) {
             strncpy(buffer + offset - 1, _arg, ptr - _arg);
-            buffer[offset + ptr - _arg] = '\0';
+            buffer[offset + ptr - _arg - 1] = '\0';
             _arg = ptr + 1;
             setadd(op, buffer);
+            printf("Buffer: %s\n", buffer);
             new_opt = addoptiter(op);
             new_opt->set_list = NULL;
             op = new_opt;
         } else if(*(ptr + 1)  == '\0') {
             strncpy(buffer + offset - 1, _arg, ptr - _arg + 1);
-            buffer[offset + ptr - _arg + 1] = '\0';
+            buffer[offset + ptr - _arg] = '\0';
             setadd(op, buffer);
             new_opt = addoptiter(op);
             new_opt->set_list = NULL;
-            new_opt->iterate = NULL;
             op = new_opt;
         }
         ptr++;
