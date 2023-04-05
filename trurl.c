@@ -246,19 +246,30 @@ static bool checkoptarg(const char *str,
 /* returns address of most recently added option */
 struct option *addoptiter(struct option *o){
     if(o->iterate)
-        addoptiter(o->iterate);
+        return addoptiter(o->iterate);
+    else {
+        struct option *opt = malloc(sizeof(struct option));
+        memcpy(opt, o, sizeof(struct option));
+        o->iterate = opt;
+        opt->iterate = NULL;
+        return opt;
+    }
+}
 
-    struct option *opt = malloc(sizeof(struct option));
-    memcpy(opt, o, sizeof(struct option));
-    o->iterate = opt;
-    opt->iterate = NULL;
-    return opt;
+static int optcleanup(struct option *o) {
+    if(o->iterate)
+      optcleanup(o->iterate);
+    curl_slist_free_all(o->set_list);
+
+    free(o);
+    return 0;
 }
 
 static int iterate(struct option *op, const char *arg) {
     int offset = 0; /* offset from start to the beginning of the arguments */
     int arg_str_len = strlen(arg); /* total length of arguments */
-    char *buffer = malloc(4096 * sizeof(char));
+    char buffer[4096];// = malloc(4096 * sizeof(char));
+    memset(buffer, '\0', 4096);
     
     /* check which paramter is being iterated */
     if(!strncmp("hosts=", arg, 5)) {
@@ -297,6 +308,7 @@ static int iterate(struct option *op, const char *arg) {
         }
         ptr++;
     }
+    //free(buffer);
     return 0;
 }
 
@@ -709,11 +721,12 @@ int main(int argc, const char **argv)
 
     } while(node);
   }
-  /* we're done with libcurl, so clean it up */
+ /* we're done with libcurl, so clean it up */
   curl_slist_free_all(o.url_list);
   curl_slist_free_all(o.set_list);
   curl_slist_free_all(o.append_path);
   curl_slist_free_all(o.append_query);
+  optcleanup(o.iterate);
   curl_global_cleanup();
   return exit_status;
 }
