@@ -243,26 +243,74 @@ static bool checkoptarg(const char *str,
   return false;
 }
 
+
+
 /* returns address of most recently added option */
 struct option *addoptiter(struct option *o){
-    if(o->iterate)
-        return addoptiter(o->iterate);
-    else {
-        struct option *opt = malloc(sizeof(struct option));
-        memcpy(opt, o, sizeof(struct option));
-        o->iterate = opt;
-        opt->iterate = NULL;
-        return opt;
+    while(o->iterate != NULL) {
+        o = o->iterate;
     }
+
+    struct option *opt = malloc(sizeof(struct option));
+    memcpy(opt, o, sizeof(struct option));
+    o->iterate = opt;
+    opt->iterate = NULL;
+    return opt;
 }
 
+struct option *optgetend(struct option *o) {
+    struct option *tmp = o->iterate;
+    while(tmp->iterate != NULL){
+        tmp = tmp->iterate;
+    }
+    return tmp;
+}
+
+/* clones the options list, returns the start of the list */
+struct option* cloneopts(struct option *o) {
+  struct option *new_opt = malloc(sizeof(struct option));
+  struct curl_slist *tmp;
+  memset(new_opt, 0, sizeof(struct option));
+  while(o != NULL) {
+      new_opt = addoptiter(new_opt);
+      memcpy(new_opt, o, sizeof(struct option));
+      new_opt->set_list = NULL;
+      /* Clone set_list */
+      while(o->set_list) {
+          printf("WHAT: %s\n", o->set_list->data);
+        tmp = curl_slist_append(new_opt->set_list, o->set_list->data);
+        if(!tmp) break;
+        new_opt->set_list = tmp;
+        o->set_list = o->set_list->next;
+      }
+
+      o = o->iterate;
+  }
+  return new_opt;
+}
+
+/* cleans up the options list */
 static int optcleanup(struct option *o) {
     if(o->iterate)
       optcleanup(o->iterate);
-    curl_slist_free_all(o->set_list);
 
     free(o);
     return 0;
+}
+
+struct curl_slist *slist_clone(struct curl_slist *list) {
+    struct curl_slist     *item;
+
+    /* if caller passed us a NULL, return now */
+    if(!list)
+        return NULL;
+
+    /* loop through to find the last item */
+    item = list;
+    while(item->next) {
+        item = item->next;
+    }
+    return item;
 }
 
 static int iterate(struct option *op, const char *arg) {
@@ -271,7 +319,6 @@ static int iterate(struct option *op, const char *arg) {
     char buffer[4096];
     memset(buffer, '\0', 4096);
     
-    printf("%d\n", arg_str_len);
     /* check which paramter is being iterated */
     if(!strncmp("hosts=", arg, 5)) {
         strncpy(buffer, "host=", 6);
@@ -287,33 +334,37 @@ static int iterate(struct option *op, const char *arg) {
     if(offset == 0 || offset + 1 >= arg_str_len){
         errorf(ERROR_ITER, "Missing arguments for iterator %s", arg);
     }
-
     
+    //struct option *tmp = cloneopts(op);
+    //struct option *tmp = op;
+
     /* parse individual tokens from arg */
     offset += 1;
     const char *ptr = &arg[offset];
     const char *_arg = ptr;
     struct option *new_opt;
+
     while(*ptr != '\0') {
         if(*ptr == ' ' ) {
             strncpy(buffer + offset - 1, _arg, ptr - _arg);
             buffer[offset + ptr - _arg - 1] = '\0';
             _arg = ptr + 1;
-            setadd(op, buffer);
-            printf("Buffer: %s\n", buffer);
             new_opt = addoptiter(op);
-            new_opt->set_list = NULL;
-            op = new_opt;
+            new_opt->set_list = slist_clone(op->set_list);
+            setadd(new_opt, buffer);
         } else if(*(ptr + 1)  == '\0') {
             strncpy(buffer + offset - 1, _arg, ptr - _arg + 1);
             buffer[offset + ptr - _arg] = '\0';
             setadd(op, buffer);
             new_opt = addoptiter(op);
-            new_opt->set_list = NULL;
-            op = new_opt;
+            new_opt->set_list = slist_clone(op->set_list);
         }
         ptr++;
     }
+    
+    //struct option *bonk = optgetend(op);
+    //bonk->iterate = tmp;
+
     //free(buffer);
     return 0;
 }
@@ -363,6 +414,8 @@ static int getarg(struct option *op,
   else if(!strcmp("--json", flag))
     op->jsonout = true;
   else if(checkoptarg("--iterate", flag, arg)) {
+      //if(op->iterate)
+      //    errorf(ERROR_ITER, "only one iterator per time");
       iterate(op, arg);
       //op->iterate = 1;
       *usedarg = 1;
@@ -483,7 +536,7 @@ static void set(CURLU *uh,
       for(i=0; variables[i].name; i++) {
         if((strlen(variables[i].name) == vlen) &&
            !strncasecmp(set, variables[i].name, vlen)) {
-          if(varset[i])
+          if(varset[i] && !o->iterate)
             errorf(ERROR_SET, "A component can only be set once per URL (%s)",
                    variables[i].name);
           curl_url_set(uh, variables[i].part, ptr+1,
