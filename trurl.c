@@ -934,17 +934,17 @@ int main(int argc, const char **argv)
       struct option *opt = &o;
       if(node) {
         const char *url = node->data;
-        do{
+        while(opt){
            singleurl(opt, url);
            opt = opt->iterate;
-        } while(opt->iterate);
+        }
         node = node->next;
       }
       else
-        do{
-           singleurl(opt, NULL);
-           opt = opt->iterate;
-        }while(opt->iterate);
+          while(opt) {
+              singleurl(opt, NULL);
+              opt = opt->iterate;
+          }
 
     } while(node);
   }
@@ -956,7 +956,7 @@ int main(int argc, const char **argv)
   curl_slist_free_all(o.trim_list);
   curl_slist_free_all(o.append_path);
   curl_slist_free_all(o.append_query);
-  optcleanup(o.iterate);
+  //optcleanup(o.iterate);
   curl_global_cleanup();
   return exit_status;
 }
