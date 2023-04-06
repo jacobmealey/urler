@@ -325,17 +325,18 @@ static int optcleanup(struct option *o) {
 }
 
 struct curl_slist *slist_clone(struct curl_slist *list) {
-    struct curl_slist     *item;
+    struct curl_slist     *item = NULL;
 
     /* if caller passed us a NULL, return now */
     if(!list)
         return NULL;
 
     /* loop through to find the last item */
-    item = list;
-    while(item->next) {
-        item = item->next;
-    }
+    do {
+        item = curl_slist_append(item, list->data);
+        list = list->next;
+    } while(list);
+
     return item;
 }
 
@@ -376,6 +377,7 @@ static int iterate(struct option *op, const char *arg) {
             buffer[offset + ptr - _arg - 1] = '\0';
             _arg = ptr + 1;
             new_opt = addoptiter(op);
+            printf("Setting: %s\n", buffer);
             new_opt->set_list = slist_clone(op->set_list);
             setadd(new_opt, buffer);
         } else if(*(ptr + 1)  == '\0') {
@@ -383,7 +385,9 @@ static int iterate(struct option *op, const char *arg) {
             buffer[offset + ptr - _arg] = '\0';
             setadd(op, buffer);
             new_opt = addoptiter(op);
+            printf("Setting: %s\n", buffer);
             new_opt->set_list = slist_clone(op->set_list);
+            setadd(new_opt, buffer);
         }
         ptr++;
     }
@@ -573,7 +577,7 @@ static void set(CURLU *uh,
       for(i=0; variables[i].name; i++) {
         if((strlen(variables[i].name) == vlen) &&
            !strncasecmp(set, variables[i].name, vlen)) {
-          if(varset[i] && !o->iterate)
+          if(varset[i] && !o)
             errorf(ERROR_SET, "A component can only be set once per URL (%s)",
                    variables[i].name);
           curl_url_set(uh, variables[i].part, ptr[1] ? &ptr[1] : NULL,
