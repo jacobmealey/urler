@@ -2,7 +2,7 @@
 
 command line tool for URL parsing and manipulation
 
-[original idea](https://curl.se/mail/archive-2023-03/0030.html)
+[video presentation](https://youtu.be/oDL7DVszr2w)
 
 ## Example command lines
 
@@ -41,15 +41,20 @@ command line tool for URL parsing and manipulation
   [one host name per URL in the input file]
 
   $ trurl "https://fake.host/hello#frag" --set user=::moo:: --json
-  {
-    "url": "https://%3a%3amoo%3a%3a@fake.host/hello#frag",
-    "scheme": "https",
-    "user": "::moo::",
-    "host": "fake.host",
-    "port": "443",
-    "path": "/hello",
-    "fragment": "frag",
-  }
+  [
+    {
+      "url": "https://%3a%3amoo%3a%3a@fake.host/hello#frag",
+      "scheme": "https",
+      "user": "::moo::",
+      "host": "fake.host",
+      "port": "443",
+      "path": "/hello",
+      "fragment": "frag"
+    }
+  ]
+
+  $ trurl "https://example.com?search=hello&utm_source=tracker" --trim query="utm_*"
+  https://example.com/?search=hello
 ~~~
 
 ## Install
@@ -64,6 +69,14 @@ cc  -W -Wall -pedantic -g   -c -o trurl.o trurl.c
 cc   trurl.o  -lcurl -o trurl
 ```
 
-Note that development files of libcurl (e.g. `libcurl4-openssl-dev` or
-`libcurl4-gnutls-dev`) are needed for compilation. Requries libcurl version
-7.62.0 or newer.
+## Prerequisites
+
+Development files of libcurl (e.g. `libcurl4-openssl-dev` or
+`libcurl4-gnutls-dev`) are needed for compilation. Requires libcurl version
+7.62.0 or newer (the first libcurl to ship the URL parsing API).
+
+trurl also uses `CURLUPART_ZONEID` added in libcurl 7.81.0 and
+`curl_url_strerror()` added in libcurl 7.80.0
+
+It would certainly be possible to make trurl work with older libcurl versions
+if someone wanted to.

@@ -31,6 +31,10 @@
 
 #include "version.h"
 
+#ifdef _MSC_VER
+#define strncasecmp _strnicmp
+#endif
+
 #define OUTPUT_URL      0  /* default */
 #define OUTPUT_SCHEME   1
 #define OUTPUT_USER     2
@@ -70,14 +74,16 @@ static const struct var variables[] = {
 #define WARN_PREFIX PROGNAME " note: "
 
 /* error codes */
-#define ERROR_FILE   1
-#define ERROR_APPEND 2 /* --append mistake */
-#define ERROR_ARG    3 /* a command line option misses its argument */
-#define ERROR_FLAG   4 /* a command line flag mistake */
-#define ERROR_SET    5 /* a --set problem */
-#define ERROR_MEM    6 /* out of memory */
-#define ERROR_URL    7 /* could not get a URL out of the set components */
-#define ERROR_ITER   8 /* unable to find arguments for iterator */
+#define ERROR_FILE    1
+#define ERROR_APPEND  2 /* --append mistake */
+#define ERROR_ARG     3 /* a command line option misses its argument */
+#define ERROR_FLAG    4 /* a command line flag mistake */
+#define ERROR_SET     5 /* a --set problem */
+#define ERROR_MEM     6 /* out of memory */
+#define ERROR_URL     7 /* could not get a URL out of the set components */
+#define ERROR_TRIM    8 /* a --trim problem */
+#define ERROR_BADURL  9 /* if --verify is set and the URL cannot parse */
+#define ERROR_ITER   10 /* unable to find arguments for iterator */
 
 static void warnf(char *fmt, ...)
 {
@@ -104,18 +110,19 @@ static void errorf(int exit_code, char *fmt, ...)
 static void help(void)
 {
   int i;
-  fprintf(stderr, "Usage: [options] [URL]\n"
-          "  -h, --help                   - this help\n"
-          "  -v, --version                - show version\n"
-          " INPUT\n"
-          "  --append [component]=[data]  - append data to component\n"
-          "  --redirect [URL]             - redirect the base URL to this\n"
-          "  -s, --set [component]=[data] - set this component\n"
-          "  --url [base URL]             - URL to start with\n"
+  fprintf(stderr, "Usage: " PROGNAME " [options] [URL]\n"
+          "  -a, --append [component]=[data] - append data to component\n"
+          "  --accept-space               - give in to this URL abuse\n"
           "  -f, --url-file [file/-]      - read URLs from file or stdin\n"
-          " OUTPUT\n"
-          "  -g, --get [{component}s]     - output URL component(s)\n"
-          " --json                        - output URL info as JSON\n"
+          "  -g, --get [{component}s]     - output component(s)\n"
+          "  -h, --help                   - this help\n"
+          "  --json                       - output URL as JSON\n"
+          "  --redirect [URL]             - redirect to this\n"
+          "  -s, --set [component]=[data] - set component content\n"
+          "  --trim [component]=[what]    - trim component\n"
+          "  --url [URL]                  - URL to work with\n"
+          "  -v, --version                - show version\n"
+          "  --verify                     - return error on (first) bad URL\n"
           " URL COMPONENTS:\n"
           "  "
     );
@@ -139,14 +146,24 @@ struct option {
   struct curl_slist *append_path;
   struct curl_slist *append_query;
   struct curl_slist *set_list;
+  struct curl_slist *trim_list;
   const char *redirect;
   const char *format;
   FILE *url;
   bool urlopen;
   bool jsonout;
   struct option *iterate;
+  bool verify;
+  bool accept_space;
   unsigned char output;
+
+  /* -- stats -- */
+  unsigned int urls;
 };
+
+#define MAX_QPAIRS 1000
+char *qpairs[MAX_QPAIRS];
+int nqpairs; /* how many is stored */
 
 static void urladd(struct option *o, const char *url)
 {
@@ -229,6 +246,15 @@ static void setadd(struct option *o,
   n = curl_slist_append(o->set_list, set);
   if(n)
     o->set_list = n;
+}
+
+static void trimadd(struct option *o,
+                    const char *trim) /* [component]=[data] */
+{
+  struct curl_slist *n;
+  n = curl_slist_append(o->trim_list, trim);
+  if(n)
+    o->trim_list = n;
 }
 
 static bool checkoptarg(const char *str,
@@ -389,7 +415,8 @@ static int getarg(struct option *op,
     urlfile(op, arg);
     *usedarg = 1;
   }
-  else if(checkoptarg("--append", flag, arg)) {
+  else if(checkoptarg("-a", flag, arg) ||
+          checkoptarg("--append", flag, arg)) {
     appendadd(op, arg);
     *usedarg = 1;
   }
@@ -402,6 +429,10 @@ static int getarg(struct option *op,
     if(op->redirect)
       errorf(ERROR_FLAG, "only one --redirect is supported");
     op->redirect = arg;
+    *usedarg = 1;
+  }
+  else if(checkoptarg("--trim", flag, arg)) {
+    trimadd(op, arg);
     *usedarg = 1;
   }
   else if(checkoptarg("-g", flag, arg) ||
@@ -420,6 +451,10 @@ static int getarg(struct option *op,
       //op->iterate = 1;
       *usedarg = 1;
   }
+  else if(!strcmp("--verify", flag))
+    op->verify = true;
+  else if(!strcmp("--accept-space", flag))
+    op->accept_space = true;
   else
     return 1;  /* unrecognized option */
   return 0;
@@ -461,7 +496,9 @@ static void get(struct option *op, CURLU *uh)
              !strncasecmp(ptr, variables[i].name, vlen)) {
             char *nurl;
             CURLUcode rc;
-            rc = curl_url_get(uh, variables[i].part, &nurl, CURLU_DEFAULT_PORT|
+            rc = curl_url_get(uh, variables[i].part, &nurl,
+                              CURLU_DEFAULT_PORT|
+                              CURLU_NO_DEFAULT_PORT|
                               (urldecode?CURLU_URLDECODE:0));
             switch(rc) {
             case CURLUE_OK:
@@ -539,7 +576,7 @@ static void set(CURLU *uh,
           if(varset[i] && !o->iterate)
             errorf(ERROR_SET, "A component can only be set once per URL (%s)",
                    variables[i].name);
-          curl_url_set(uh, variables[i].part, ptr+1,
+          curl_url_set(uh, variables[i].part, ptr[1] ? &ptr[1] : NULL,
                        CURLU_NON_SUPPORT_SCHEME|
                        (urlencode ? CURLU_URLENCODE : 0) );
           found = true;
@@ -605,19 +642,144 @@ static void json(struct option *o, CURLU *uh)
 {
   int i;
   (void)o;
-  fputs("{\n", stdout);
+  printf("%s  {\n", o->urls?",\n":"");
   for(i = 0; variables[i].name; i++) {
     char *nurl;
     CURLUcode rc = curl_url_get(uh, variables[i].part, &nurl,
                                 (i?CURLU_DEFAULT_PORT:0)|
                                 CURLU_URLDECODE);
     if(!rc) {
-      printf("  \"%s\": ", variables[i].name);
+      if(i)
+        fputs(",\n", stdout);
+      printf("    \"%s\": ", variables[i].name);
       jsonString(stdout, nurl, false);
-      fputs(",\n", stdout);
     }
   }
-  fputs("}\n", stdout);
+  fputs("\n  }", stdout);
+}
+
+/* --trim query="utm_*" */
+static void trim(struct option *o)
+{
+  struct curl_slist *node;
+  for(node = o->trim_list; node; node=node->next) {
+    char *instr = node->data;
+    if(strncasecmp(instr, "query", 5))
+      /* for now we can only trim query components */
+      errorf(ERROR_TRIM, "Unsupported trim component: %s", instr);
+    char *ptr = strchr(instr, '=');
+    if(ptr && (ptr > instr)) {
+      /* 'ptr' should be a fixed string or a pattern ending with an
+         asterisk */
+      size_t inslen;
+      bool pattern;
+      int i;
+
+      ptr++; /* pass the = */
+      inslen = strlen(ptr);
+      pattern = ptr[inslen - 1] == '*';
+      if(pattern)
+        inslen--;
+
+      for(i=0 ; i < nqpairs; i++) {
+        char *q = qpairs[i];
+        char *sep = strchr(q, '=');
+        size_t qlen;
+        if(sep)
+          qlen = sep - q;
+        else
+          qlen = strlen(q);
+
+        if((pattern && (inslen <= qlen) &&
+            !strncasecmp(q, ptr, inslen)) ||
+           (!pattern && (inslen == qlen) &&
+            !strncasecmp(q, ptr, inslen))) {
+          /* this qpair should be stripped out */
+          free(qpairs[i]);
+          qpairs[i] = strdup(""); /* marked as deleted */
+        }
+      }
+    }
+  }
+}
+
+/* memdup the amount and add a trailing zero */
+char *memdupzero(char *source, size_t len)
+{
+  char *p = malloc(len + 1);
+  if(p) {
+    memcpy(p, source, len);
+    p[len] = 0;
+    return p;
+  }
+  return NULL;
+}
+
+static void freeqpairs(void)
+{
+  int i;
+  for(i=0; i<nqpairs; i++) {
+    free(qpairs[i]);
+    qpairs[i] = NULL;
+  }
+  nqpairs = 0;
+}
+
+static char *addqpair(char *pair, size_t len)
+{
+  char *p = NULL;
+  if(nqpairs < MAX_QPAIRS) {
+    p = memdupzero(pair, len);
+    if(p)
+      qpairs[nqpairs++] = p;
+  }
+  else
+    warnf("too many query pairs");
+  return p;
+}
+
+/* convert the query string into an array of name=data pair */
+static void extractqpairs(CURLU *uh)
+{
+  char *q = NULL;
+  memset(qpairs, 0, sizeof(qpairs));
+  nqpairs = 0;
+  /* extract the query */
+  if(!curl_url_get(uh, CURLUPART_QUERY, &q, 0)) {
+    char *p = q;
+    char *amp;
+    while(*p) {
+      size_t len;
+      amp = strchr(p, '&');
+      if(!amp)
+        len = strlen(p);
+      else
+        len = amp - p;
+      addqpair(p, len);
+      if(amp)
+        p = amp + 1;
+      else
+        break;
+    }
+  }
+  curl_free(q);
+}
+
+void qpair2query(CURLU *uh)
+{
+  int i;
+  int rc;
+  char *nq=NULL;
+  for(i=0; i<nqpairs; i++) {
+    nq = curl_maprintf("%s%s%s", nq?nq:"",
+                       (nq && *nq && *qpairs[i])? "&": "", qpairs[i]);
+  }
+  if(nq) {
+    rc = curl_url_set(uh, CURLUPART_QUERY, nq, 0);
+    if(rc)
+      warnf("internal problem");
+  }
+  curl_free(nq);
 }
 
 static void singleurl(struct option *o,
@@ -630,8 +792,12 @@ static void singleurl(struct option *o,
     if(url) {
       CURLUcode rc =
         curl_url_set(uh, CURLUPART_URL, url,
-                     CURLU_GUESS_SCHEME|CURLU_NON_SUPPORT_SCHEME);
+                     CURLU_GUESS_SCHEME|CURLU_NON_SUPPORT_SCHEME|
+                     (o->accept_space ?
+                      (CURLU_ALLOW_SPACE|CURLU_URLENCODE) : 0));
       if(rc) {
+        if(o->verify)
+          errorf(ERROR_BADURL, "%s [%s]", curl_url_strerror(rc), url);
         warnf("%s [%s]", curl_url_strerror(rc), url);
         return;
       }
@@ -669,23 +835,18 @@ static void singleurl(struct option *o,
       curl_free(opath);
     }
 
+    extractqpairs(uh);
+
     /* append query segments */
     for(p = o->append_query; p; p=p->next) {
-      char *aq = p->data;
-      char *oq;
-      char *nq;
-      /* extract the current query */
-      curl_url_get(uh, CURLUPART_QUERY, &oq, 0);
-
-      /* append the new segment */
-      nq = curl_maprintf("%s&%s", oq, aq);
-      if(nq) {
-        /* set the new query */
-        curl_url_set(uh, CURLUPART_QUERY, nq, 0);
-      }
-      curl_free(nq);
-      curl_free(oq);
+      addqpair(p->data, strlen(p->data));
     }
+
+    /* trim parts */
+    trim(o);
+
+    /* put the query back */
+    qpair2query(uh);
 
     if(o->jsonout)
       json(o, uh);
@@ -696,7 +857,7 @@ static void singleurl(struct option *o,
     else {
       /* default output is full URL */
       char *nurl = NULL;
-      if(!curl_url_get(uh, CURLUPART_URL, &nurl, 0)) {
+      if(!curl_url_get(uh, CURLUPART_URL, &nurl, CURLU_NO_DEFAULT_PORT)) {
         printf("%s\n", nurl);
         curl_free(nurl);
       }
@@ -704,6 +865,10 @@ static void singleurl(struct option *o,
         errorf(ERROR_URL, "not enough input for a URL");
       }
     }
+
+    freeqpairs();
+
+    o->urls++;
     curl_url_cleanup(uh);
 }
 
@@ -734,6 +899,9 @@ int main(int argc, const char **argv)
       argv++;
     }
   }
+
+  if(o.jsonout)
+    fputs("[\n", stdout);
 
   if(o.url) {
     /* this is a file to read URLs from */
@@ -780,9 +948,12 @@ int main(int argc, const char **argv)
 
     } while(node);
   }
- /* we're done with libcurl, so clean it up */
+  if(o.jsonout)
+    fputs("\n]\n", stdout);
+  /* we're done with libcurl, so clean it up */
   curl_slist_free_all(o.url_list);
   curl_slist_free_all(o.set_list);
+  curl_slist_free_all(o.trim_list);
   curl_slist_free_all(o.append_path);
   curl_slist_free_all(o.append_query);
   optcleanup(o.iterate);
