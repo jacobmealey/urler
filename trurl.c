@@ -243,9 +243,13 @@ static void setadd(struct option *o,
                    const char *set) /* [component]=[data] */
 {
   struct curl_slist *n;
-  n = curl_slist_append(o->set_list, set);
-  if(n)
-    o->set_list = n;
+  do {
+    n = curl_slist_append(o->set_list, set);
+    if(n)
+      o->set_list = n;
+    o = o->iterate;
+  } while(o);
+  
 }
 
 static void trimadd(struct option *o,
@@ -285,35 +289,14 @@ struct option *addoptiter(struct option *o){
 }
 
 struct option *optgetend(struct option *o) {
-    struct option *tmp = o->iterate;
+    struct option *tmp = o;
     while(tmp->iterate != NULL){
         tmp = tmp->iterate;
     }
     return tmp;
 }
 
-/* clones the options list, returns the start of the list */
-struct option* cloneopts(struct option *o) {
-  struct option *new_opt = malloc(sizeof(struct option));
-  struct curl_slist *tmp;
-  memset(new_opt, 0, sizeof(struct option));
-  while(o != NULL) {
-      new_opt = addoptiter(new_opt);
-      memcpy(new_opt, o, sizeof(struct option));
-      new_opt->set_list = NULL;
-      /* Clone set_list */
-      while(o->set_list) {
-          printf("WHAT: %s\n", o->set_list->data);
-        tmp = curl_slist_append(new_opt->set_list, o->set_list->data);
-        if(!tmp) break;
-        new_opt->set_list = tmp;
-        o->set_list = o->set_list->next;
-      }
 
-      o = o->iterate;
-  }
-  return new_opt;
-}
 
 /* cleans up the options list */
 static int optcleanup(struct option *o) {
@@ -327,17 +310,35 @@ static int optcleanup(struct option *o) {
 struct curl_slist *slist_clone(struct curl_slist *list) {
     struct curl_slist     *item = NULL;
 
-    /* if caller passed us a NULL, return now */
-    if(!list)
-        return NULL;
-
+    if(list == NULL) {
+        //printf("no list passed to slist clone...\n");
+        return item;
+    }
     /* loop through to find the last item */
     do {
         item = curl_slist_append(item, list->data);
+        //printf("list->data: %s\n", list->data);
+        if(item == NULL) return item;
         list = list->next;
     } while(list);
 
     return item;
+}
+
+/* clones the options list, returns the start of the list */
+struct option* cloneopts(struct option *o) {
+  struct option *new_opt = malloc(sizeof(struct option));
+  struct option *tmp;
+  memcpy(new_opt, o, sizeof(struct option));
+  new_opt->iterate = NULL;
+  do{
+      tmp = addoptiter(new_opt);
+      memcpy(tmp, o, sizeof(struct option));
+      tmp->set_list = slist_clone(o->set_list);
+      tmp->iterate = NULL;
+      o = o->iterate;
+  } while(o);
+  return new_opt;
 }
 
 static int iterate(struct option *op, const char *arg) {
@@ -370,32 +371,42 @@ static int iterate(struct option *op, const char *arg) {
     const char *ptr = &arg[offset];
     const char *_arg = ptr;
     struct option *new_opt;
+    struct option *o = cloneopts(op);
+    struct option *tmp = o;
 
     while(*ptr != '\0') {
         if(*ptr == ' ' ) {
             strncpy(buffer + offset - 1, _arg, ptr - _arg);
             buffer[offset + ptr - _arg - 1] = '\0';
             _arg = ptr + 1;
-            new_opt = addoptiter(op);
-            printf("Setting: %s\n", buffer);
-            new_opt->set_list = slist_clone(op->set_list);
+            new_opt = addoptiter(o);
+            new_opt->set_list = slist_clone(o->set_list);
+            //printf("new_opt new setting: %p\n", new_opt->set_list);
+            printf("buffer: %s\n", buffer);
             setadd(new_opt, buffer);
+            //printf("new_opt new setting: %s\n", new_opt->set_list->data);
+            tmp->iterate = new_opt;
+            tmp = tmp->iterate;
         } else if(*(ptr + 1)  == '\0') {
             strncpy(buffer + offset - 1, _arg, ptr - _arg + 1);
             buffer[offset + ptr - _arg] = '\0';
-            setadd(op, buffer);
-            new_opt = addoptiter(op);
-            printf("Setting: %s\n", buffer);
-            new_opt->set_list = slist_clone(op->set_list);
+            new_opt = addoptiter(o);
+            new_opt->set_list = slist_clone(o->set_list);
+            //printf("new_opt new setting: %p\n", new_opt->set_list);
             setadd(new_opt, buffer);
+            printf("buffer: %s\n", buffer);
+            //printf("new_opt new setting: %s\n", new_opt->set_list->data);
+            tmp->iterate = new_opt;
+            tmp = o->iterate;
         }
         ptr++;
     }
+    o = o->iterate;
     
-    //struct option *bonk = optgetend(op);
-    //bonk->iterate = tmp;
-
-    //free(buffer);
+    //optgetend(o)->iterate = op;
+    struct option *t = optgetend(op);
+    t->iterate = o;
+    //printf("t->iterate: %p, set list: %p\n", t->iterate, t->set_list);
     return 0;
 }
 
@@ -562,8 +573,10 @@ static void set(CURLU *uh,
   struct curl_slist *node;
   bool varset[NUM_COMPONENTS];
   memset(varset, 0, sizeof(varset));
+  //printf("node list in set: %p\n", o->set_list);
   for(node =  o->set_list; node; node=node->next) {
     char *set = node->data;
+    //printf("set: %s\n", set);
     int i;
     char *ptr = strchr(set, '=');
     if(ptr && (ptr > set)) {
@@ -577,7 +590,7 @@ static void set(CURLU *uh,
       for(i=0; variables[i].name; i++) {
         if((strlen(variables[i].name) == vlen) &&
            !strncasecmp(set, variables[i].name, vlen)) {
-          if(varset[i] && !o)
+          if(varset[i] && !o->iterate)
             errorf(ERROR_SET, "A component can only be set once per URL (%s)",
                    variables[i].name);
           curl_url_set(uh, variables[i].part, ptr[1] ? &ptr[1] : NULL,
@@ -935,10 +948,10 @@ int main(int argc, const char **argv)
     /* not reading URLs from a file */
     node = o.url_list;
     do {
-      struct option *opt = &o;
+      struct option *opt = &o;// cloneopts(&o);
       if(node) {
         const char *url = node->data;
-        while(opt){
+        while(opt->iterate != NULL){
            singleurl(opt, url);
            opt = opt->iterate;
         }
