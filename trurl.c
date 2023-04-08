@@ -389,18 +389,15 @@ static int iterate(struct option *op, const char *arg) {
     const char *ptr = &arg[offset];
     const char *_arg = ptr;
     struct option *new_opt;
-    struct option *tmp;
+    struct option **tmp;
     struct option *o;
     bool firstrun = true;
     struct option *start, *end;
     start = op;
     end = optgetend(op);
 
-    tmp = start;
-    if(tmp == end) {
-        printf("SLAYYYYYY\n");
-        tmp->iterate = NULL;
-    }
+    tmp = &start;
+    
     new_opt = op;
     printf("Start: %p, End: %p\n", start, end);
     printf("next: %p\n", start->iterate);
@@ -417,7 +414,7 @@ static int iterate(struct option *op, const char *arg) {
                 printf("buffer: %s\n", buffer);
                 print_slist(new_opt->set_list);
                 new_opt = addoptiter(op);
-                new_opt->set_list = slist_clone(tmp->set_list);
+                new_opt->set_list = slist_clone((*tmp)->set_list);
                 new_opt->iterate = NULL;
 
             } else if(*(ptr + 1)  == '\0') {
@@ -428,20 +425,20 @@ static int iterate(struct option *op, const char *arg) {
                 print_slist(new_opt->set_list);
                 if(!firstrun){
                     new_opt = addoptiter(op);
-                    new_opt->set_list = slist_clone(tmp->set_list);
+                    new_opt->set_list = slist_clone((*tmp)->set_list);
                     new_opt->iterate = NULL;
                 }
                 setadd(new_opt, buffer);
             }
             ptr++;
         }
-        if(tmp->iterate != NULL && !firstrun)
-            tmp = tmp->iterate;
+        if((*tmp)->iterate != end && !firstrun)
+            tmp = (*tmp)->iterate;
         printf("Start: %p, End: %p\n", start, end);
         printf("tmp: %p\n", tmp);
         if(!firstrun) firstrun = false;
         //new_opt = t;
-     } while(tmp != end && !firstrun);
+     } while(*tmp != end && !firstrun);
 
    return 0;
 }
