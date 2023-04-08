@@ -277,7 +277,6 @@ static bool checkoptarg(const char *str,
 
 /* returns address of most recently added option */
 struct option *addoptiter(struct option *o){
-    printf("Adding an option to the list!\n");
     while(o->iterate != NULL) {
         o = o->iterate;
     }
@@ -310,16 +309,26 @@ static int optcleanup(struct option *o) {
     return 0;
 }
 
+void print_slist(struct curl_slist *list) {
+
+    if(list == NULL) {
+        return ;
+    }
+    /* loop through to find the last item */
+    int i = 0;
+    do {
+        i++;
+        list = list->next;
+    } while(list);
+}
 struct curl_slist *slist_clone(struct curl_slist *list) {
     struct curl_slist *item = NULL;
-    struct curl_slist *tmp = list;
 
     if(list == NULL) {
         return item;
     }
     /* loop through to find the last item */
     do {
-        tmp = list;
         item = curl_slist_append(item, list->data);
         if(item == NULL) return item;
         list = list->next;
@@ -382,55 +391,59 @@ static int iterate(struct option *op, const char *arg) {
     struct option *new_opt;
     struct option *tmp;
     struct option *o;
-    if(op->iterate) {
-        o = cloneopts(op);
-    } else {
-        o = op;
-    }
-    tmp = o;
+    bool firstrun = true;
+    struct option *start, *end;
+    start = op;
+    end = optgetend(op);
 
-    while(*ptr != '\0') {
-        if(*ptr == ' ' ) {
-            strncpy(buffer + offset - 1, _arg, ptr - _arg);
-            buffer[offset + ptr - _arg - 1] = '\0';
-            _arg = ptr + 1;
-            //if(op == o)
-                new_opt = addoptiter(o);
-            //else
-            //    new_opt = tmp;
-            new_opt->set_list = slist_clone(o->set_list);
-            printf("buffer: %s\n", buffer);
-            setadd(tmp, buffer);
-            //printf("new_opt new setting: %s\n", new_opt->set_list->data);
-            if(op == o){
-                tmp->iterate = new_opt;
-                tmp = tmp->iterate;
-            } else {
-                tmp = tmp->iterate;
+    tmp = start;
+    if(tmp == end) {
+        printf("SLAYYYYYY\n");
+        tmp->iterate = NULL;
+    }
+    new_opt = op;
+    printf("Start: %p, End: %p\n", start, end);
+    printf("next: %p\n", start->iterate);
+
+    do {
+        ptr = &arg[offset];
+        _arg = ptr;
+        while(*ptr != '\0') {
+            if(*ptr == ' ' ) {
+                strncpy(buffer + offset - 1, _arg, ptr - _arg);
+                buffer[offset + ptr - _arg - 1] = '\0';
+                _arg = ptr + 1;
+                setadd(new_opt, buffer);
+                printf("buffer: %s\n", buffer);
+                print_slist(new_opt->set_list);
+                new_opt = addoptiter(op);
+                new_opt->set_list = slist_clone(tmp->set_list);
+                new_opt->iterate = NULL;
+
+            } else if(*(ptr + 1)  == '\0') {
+                strncpy(buffer + offset - 1, _arg, ptr - _arg + 1);
+                buffer[offset + ptr - _arg] = '\0';
+
+                printf("buffer at end: %s\n", buffer);
+                print_slist(new_opt->set_list);
+                if(!firstrun){
+                    new_opt = addoptiter(op);
+                    new_opt->set_list = slist_clone(tmp->set_list);
+                    new_opt->iterate = NULL;
+                }
+                setadd(new_opt, buffer);
             }
-        } else if(*(ptr + 1)  == '\0') {
-            strncpy(buffer + offset - 1, _arg, ptr - _arg + 1);
-            buffer[offset + ptr - _arg] = '\0';
-            new_opt = addoptiter(o);
-            new_opt->set_list = slist_clone(o->set_list);
-            printf("buffer: %s\n", buffer);
-            setadd(tmp, buffer);
-            //printf("new_opt new setting: %s\n", new_opt->set_list->data);
-            if(op == o){
-                tmp->iterate = new_opt;
-                tmp = tmp->iterate;
-            } else {
-                tmp = tmp->iterate;
-            }
+            ptr++;
         }
-        ptr++;
-    }
-    
-    if(o != op){
-        struct option *t = optgetend(op);
-        t->iterate = o;
-    }
-    return 0;
+        if(tmp->iterate != NULL && !firstrun)
+            tmp = tmp->iterate;
+        printf("Start: %p, End: %p\n", start, end);
+        printf("tmp: %p\n", tmp);
+        if(!firstrun) firstrun = false;
+        //new_opt = t;
+     } while(tmp != end && !firstrun);
+
+   return 0;
 }
 
 static int getarg(struct option *op,
@@ -599,7 +612,6 @@ static void set(CURLU *uh,
   //printf("node list in set: %p\n", o->set_list);
   for(node =  o->set_list; node; node=node->next) {
     char *set = node->data;
-    printf("set: %s\n", set);
     int i;
     char *ptr = strchr(set, '=');
     if(ptr && (ptr > set)) {
@@ -996,7 +1008,7 @@ int main(int argc, const char **argv)
   curl_slist_free_all(o.trim_list);
   curl_slist_free_all(o.append_path);
   curl_slist_free_all(o.append_query);
-  optcleanup(o.iterate);
+  //optcleanup(o.iterate);
   curl_global_cleanup();
   return exit_status;
 }
