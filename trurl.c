@@ -280,7 +280,6 @@ struct option *addoptiter(struct option *o){
     while(o->iterate != NULL) {
         o = o->iterate;
     }
-    printf("adding option to list\n");
     struct option *opt = malloc(sizeof(struct option));
     memcpy(opt, o, sizeof(struct option));
     o->iterate = opt;
@@ -344,7 +343,6 @@ struct option* cloneopts(struct option *o) {
   struct option *tmp;
   memcpy(new_opt, o, sizeof(struct option));
   new_opt->iterate = NULL;
-  printf("Cloning... ");
   int n = 0;
   do{
       tmp = addoptiter(new_opt);
@@ -354,7 +352,6 @@ struct option* cloneopts(struct option *o) {
       o = o->iterate;
       n++;
   } while(o);
-  printf("Made %d clones.\n", n);
   return new_opt;
 }
 
@@ -364,7 +361,6 @@ static int iterate(struct option *op, const char *arg) {
     char buffer[4096];
     memset(buffer, '\0', 4096);
     
-    printf("ITERATING AHAHA\n");
     /* check which paramter is being iterated */
     if(!strncmp("hosts=", arg, 5)) {
         strncpy(buffer, "host=", 6);
@@ -389,14 +385,6 @@ static int iterate(struct option *op, const char *arg) {
     const char *ptr = &arg[offset];
     const char *_arg = ptr;
     struct option *new_opt;
-    struct option **tmp;
-    struct option *o;
-    bool firstrun = true;
-    struct option *start, *end;
-    start = op;
-    end = optgetend(op);
-
-    tmp = &start;
     
     new_opt = op;
 
@@ -405,18 +393,15 @@ static int iterate(struct option *op, const char *arg) {
     _arg = ptr;
     while(*ptr != '\0') {
         bool set = false;
-        firstrun = true;
         if(*ptr == ' ' ) {
             strncpy(buffer + offset - 1, _arg, ptr - _arg);
             buffer[offset + ptr - _arg - 1] = '\0';
             _arg = ptr + 1;
             set = true;
-            printf("buffer: %s\n", buffer);
         } else if(*(ptr + 1)  == '\0') {
             strncpy(buffer + offset - 1, _arg, ptr - _arg + 1);
             buffer[offset + ptr - _arg] = '\0';
             set = true;
-            printf("buffer at end: %s\n", buffer);
         }
         if(set){
             set = false;
@@ -428,12 +413,7 @@ static int iterate(struct option *op, const char *arg) {
             }
         }
         ptr++;
-        printf("Stepping tmp\n");
     }
-
-
-    printf("tmp: %p\n", tmp);
-    //new_opt = t;
 
    return 0;
 }
@@ -1000,7 +980,7 @@ int main(int argc, const char **argv)
   curl_slist_free_all(o.trim_list);
   curl_slist_free_all(o.append_path);
   curl_slist_free_all(o.append_query);
-  //optcleanup(o.iterate);
+  optcleanup(o.iterate);
   curl_global_cleanup();
   return exit_status;
 }
