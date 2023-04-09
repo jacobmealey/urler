@@ -468,10 +468,9 @@ static int getarg(struct option *op,
   else if(!strcmp("--json", flag))
     op->jsonout = true;
   else if(checkoptarg("--iterate", flag, arg)) {
-      //if(op->iterate)
-      //    errorf(ERROR_ITER, "only one iterator per time");
+      if(op->iterate)
+          errorf(ERROR_ITER, "only one --iterate is supported");
       iterate(op, arg);
-      //op->iterate = 1;
       *usedarg = 1;
   }
   else if(!strcmp("--verify", flag))
