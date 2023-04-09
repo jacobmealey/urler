@@ -281,10 +281,13 @@ struct option *addoptiter(struct option *o){
         o = o->iterate;
     }
     struct option *opt = malloc(sizeof(struct option));
-    memcpy(opt, o, sizeof(struct option));
-    o->iterate = opt;
-    opt->iterate = NULL;
-    return opt;
+    if(opt){
+        memcpy(opt, o, sizeof(struct option));
+        o->iterate = opt;
+        opt->iterate = NULL;
+        return opt;
+    }
+    return NULL;
 }
 
 struct option *optgetend(struct option *o) {
@@ -340,17 +343,24 @@ struct curl_slist *slist_clone(struct curl_slist *list) {
 /* clones the options list, returns the start of the list */
 struct option* cloneopts(struct option *o) {
   struct option *new_opt = malloc(sizeof(struct option));
+  if(new_opt == NULL) {
+      return NULL;
+  }
   struct option *tmp;
   memcpy(new_opt, o, sizeof(struct option));
   new_opt->iterate = NULL;
   int n = 0;
   do{
       tmp = addoptiter(new_opt);
-      memcpy(tmp, o, sizeof(struct option));
-      tmp->set_list = slist_clone(o->set_list);
-      tmp->iterate = NULL;
-      o = o->iterate;
-      n++;
+      if(tmp){
+          memcpy(tmp, o, sizeof(struct option));
+          tmp->set_list = slist_clone(o->set_list);
+          tmp->iterate = NULL;
+          o = o->iterate;
+          n++;
+      } else {
+          return NULL;
+      }  
   } while(o);
   return new_opt;
 }
