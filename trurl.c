@@ -280,7 +280,7 @@ struct option *addoptiter(struct option *o){
     while(o->iterate != NULL) {
         o = o->iterate;
     }
-
+    printf("adding option to list\n");
     struct option *opt = malloc(sizeof(struct option));
     memcpy(opt, o, sizeof(struct option));
     o->iterate = opt;
@@ -399,46 +399,41 @@ static int iterate(struct option *op, const char *arg) {
     tmp = &start;
     
     new_opt = op;
-    printf("Start: %p, End: %p\n", start, end);
-    printf("next: %p\n", start->iterate);
 
-    do {
-        ptr = &arg[offset];
-        _arg = ptr;
-        while(*ptr != '\0') {
-            if(*ptr == ' ' ) {
-                strncpy(buffer + offset - 1, _arg, ptr - _arg);
-                buffer[offset + ptr - _arg - 1] = '\0';
-                _arg = ptr + 1;
-                setadd(new_opt, buffer);
-                printf("buffer: %s\n", buffer);
-                print_slist(new_opt->set_list);
-                new_opt = addoptiter(op);
-                new_opt->set_list = slist_clone((*tmp)->set_list);
-                new_opt->iterate = NULL;
-
-            } else if(*(ptr + 1)  == '\0') {
-                strncpy(buffer + offset - 1, _arg, ptr - _arg + 1);
-                buffer[offset + ptr - _arg] = '\0';
-
-                printf("buffer at end: %s\n", buffer);
-                print_slist(new_opt->set_list);
-                if(!firstrun){
-                    new_opt = addoptiter(op);
-                    new_opt->set_list = slist_clone((*tmp)->set_list);
-                    new_opt->iterate = NULL;
-                }
-                setadd(new_opt, buffer);
-            }
-            ptr++;
+    //new_opt = *tmp;
+    ptr = &arg[offset];
+    _arg = ptr;
+    while(*ptr != '\0') {
+        bool set = false;
+        firstrun = true;
+        if(*ptr == ' ' ) {
+            strncpy(buffer + offset - 1, _arg, ptr - _arg);
+            buffer[offset + ptr - _arg - 1] = '\0';
+            _arg = ptr + 1;
+            set = true;
+            printf("buffer: %s\n", buffer);
+        } else if(*(ptr + 1)  == '\0') {
+            strncpy(buffer + offset - 1, _arg, ptr - _arg + 1);
+            buffer[offset + ptr - _arg] = '\0';
+            set = true;
+            printf("buffer at end: %s\n", buffer);
         }
-        if((*tmp)->iterate != end && !firstrun)
-            tmp = (*tmp)->iterate;
-        printf("Start: %p, End: %p\n", start, end);
-        printf("tmp: %p\n", tmp);
-        if(!firstrun) firstrun = false;
-        //new_opt = t;
-     } while(*tmp != end && !firstrun);
+        if(set){
+            set = false;
+            setadd(new_opt, buffer);
+            if(*(ptr + 1) != '\0'){
+                new_opt = addoptiter(op);
+                new_opt->set_list = slist_clone(op->set_list);
+                new_opt->iterate = NULL;
+            }
+        }
+        ptr++;
+        printf("Stepping tmp\n");
+    }
+
+
+    printf("tmp: %p\n", tmp);
+    //new_opt = t;
 
    return 0;
 }
