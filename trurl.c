@@ -276,72 +276,76 @@ static bool checkoptarg(const char *str,
 
 
 /* returns address of most recently added option */
-struct option *addoptiter(struct option *o){
-    while(o->iterate != NULL) {
-        o = o->iterate;
-    }
-    struct option *opt = malloc(sizeof(struct option));
-    if(opt){
-        memcpy(opt, o, sizeof(struct option));
-        o->iterate = opt;
-        opt->iterate = NULL;
-        return opt;
-    }
-    return NULL;
+struct option *addoptiter(struct option *o)
+{
+  while(o->iterate != NULL) {
+    o = o->iterate;
+  }
+  struct option *opt = malloc(sizeof(struct option));
+  if(opt){
+    memcpy(opt, o, sizeof(struct option));
+    o->iterate = opt;
+    opt->iterate = NULL;
+    return opt;
+  }
+  return NULL;
 }
 
-struct option *optgetend(struct option *o) {
-    struct option *tmp = o;
-    while(tmp->iterate != NULL){
-        tmp = tmp->iterate;
-    }
-    return tmp;
+struct option *optgetend(struct option *o) 
+{
+  struct option *tmp = o;
+  while(tmp->iterate != NULL){
+    tmp = tmp->iterate;
+  }
+  return tmp;
 }
 
 
 
 /* cleans up the options list */
-static int optcleanup(struct option *o) {
-    if(o->iterate) {
-      optcleanup(o->iterate);
-    }
+static int optcleanup(struct option *o) 
+{
+  if(o->iterate) {
+    optcleanup(o->iterate);
+  }
 
-    curl_slist_free_all(o->set_list);
-    free(o);
-    return 0;
+  curl_slist_free_all(o->set_list);
+  free(o);
+  return 0;
 }
 
-void print_slist(struct curl_slist *list) {
-
-    if(list == NULL) {
-        return ;
-    }
-    /* loop through to find the last item */
-    int i = 0;
-    do {
-        i++;
-        list = list->next;
-    } while(list);
+void print_slist(struct curl_slist *list) 
+{
+  if(list == NULL) {
+    return;
+  }
+  /* loop through to find the last item */
+  int i = 0;
+  do {
+    i++;
+    list = list->next;
+  } while(list);
 }
-struct curl_slist *slist_clone(struct curl_slist *list) {
-    struct curl_slist *item = NULL;
+struct curl_slist *slist_clone(struct curl_slist *list) 
+{
+  struct curl_slist *item = NULL;
 
-    if(list == NULL) {
-        return item;
-    }
-    /* loop through to find the last item */
-    do {
-        item = curl_slist_append(item, list->data);
-        if(item == NULL) return item;
-        list = list->next;
-    } while(list);
-    
-
+  if(list == NULL) {
     return item;
+  }
+  /* loop through to find the last item */
+  do {
+    item = curl_slist_append(item, list->data);
+    if(item == NULL) return item;
+    list = list->next;
+  } while(list);
+
+  return item;
 }
 
 /* clones the options list, returns the start of the list */
-struct option* cloneopts(struct option *o) {
+struct option* cloneopts(struct option *o) 
+{
   struct option *new_opt = malloc(sizeof(struct option));
   if(new_opt == NULL) {
       return NULL;
@@ -351,81 +355,83 @@ struct option* cloneopts(struct option *o) {
   new_opt->iterate = NULL;
   int n = 0;
   do{
-      tmp = addoptiter(new_opt);
-      if(tmp){
-          memcpy(tmp, o, sizeof(struct option));
-          tmp->set_list = slist_clone(o->set_list);
-          tmp->iterate = NULL;
-          o = o->iterate;
-          n++;
-      } else {
-          return NULL;
-      }  
+    tmp = addoptiter(new_opt);
+    if(tmp){
+      memcpy(tmp, o, sizeof(struct option));
+      tmp->set_list = slist_clone(o->set_list);
+      tmp->iterate = NULL;
+      o = o->iterate;
+      n++;
+    } else {
+      return NULL;
+    }  
   } while(o);
+
   return new_opt;
 }
 
-static int iterate(struct option *op, const char *arg) {
-    int offset = 0; /* offset from start to the beginning of the arguments */
-    int arg_str_len = strlen(arg); /* total length of arguments */
-    char buffer[4096];
-    memset(buffer, '\0', 4096);
-    
-    /* check which paramter is being iterated */
-    if(!strncmp("hosts=", arg, 5)) {
-        strncpy(buffer, "host=", 6);
-        offset = 5;
-    } else if(!strncmp("ports=", arg, 6)) {
-        strncpy(buffer, "port=", 6);
-        offset = 5;
-    } else if(!strncmp("schemes=", arg, 8)) {
-        strncpy(buffer, "scheme=", 8);
-        offset = 7;
+static int iterate(struct option *op, const char *arg) 
+{
+  int offset = 0; /* offset from start to the beginning of the arguments */
+  int arg_str_len = strlen(arg); /* total length of arguments */
+  char buffer[4096];
+  memset(buffer, '\0', 4096);
+
+  /* check which paramter is being iterated */
+  if(!strncmp("hosts=", arg, 5)) {
+    strncpy(buffer, "host=", 6);
+    offset = 5;
+  } else if(!strncmp("ports=", arg, 6)) {
+    strncpy(buffer, "port=", 6);
+    offset = 5;
+  } else if(!strncmp("schemes=", arg, 8)) {
+    strncpy(buffer, "scheme=", 8);
+    offset = 7;
+  }
+
+  if(offset == 0 || offset + 1 >= arg_str_len){
+    errorf(ERROR_ITER, "Missing arguments for iterator %s", arg);
+  }
+
+  //struct option *tmp = cloneopts(op);
+  //struct option *tmp = op;
+
+  /* parse individual tokens from arg */
+  offset += 1;
+  const char *ptr = &arg[offset];
+  const char *_arg = ptr;
+  struct option *new_opt;
+
+  new_opt = op;
+
+  //new_opt = *tmp;
+  ptr = &arg[offset];
+  _arg = ptr;
+  while(*ptr != '\0') {
+    bool set = false;
+    if(*ptr == ' ' ) {
+      strncpy(buffer + offset - 1, _arg, ptr - _arg);
+      buffer[offset + ptr - _arg - 1] = '\0';
+      _arg = ptr + 1;
+      set = true;
+    } else if(*(ptr + 1)  == '\0') {
+        strncpy(buffer + offset - 1, _arg, ptr - _arg + 1);
+        buffer[offset + ptr - _arg] = '\0';
+        set = true;
     }
-
-    if(offset == 0 || offset + 1 >= arg_str_len){
-        errorf(ERROR_ITER, "Missing arguments for iterator %s", arg);
-    }
-    
-    //struct option *tmp = cloneopts(op);
-    //struct option *tmp = op;
-
-    /* parse individual tokens from arg */
-    offset += 1;
-    const char *ptr = &arg[offset];
-    const char *_arg = ptr;
-    struct option *new_opt;
-    
-    new_opt = op;
-
-    //new_opt = *tmp;
-    ptr = &arg[offset];
-    _arg = ptr;
-    while(*ptr != '\0') {
-        bool set = false;
-        if(*ptr == ' ' ) {
-            strncpy(buffer + offset - 1, _arg, ptr - _arg);
-            buffer[offset + ptr - _arg - 1] = '\0';
-            _arg = ptr + 1;
-            set = true;
-        } else if(*(ptr + 1)  == '\0') {
-            strncpy(buffer + offset - 1, _arg, ptr - _arg + 1);
-            buffer[offset + ptr - _arg] = '\0';
-            set = true;
+    if(set){
+        set = false;
+        setadd(new_opt, buffer);
+        if(*(ptr + 1) != '\0'){
+          new_opt = addoptiter(op);
+          new_opt->set_list = slist_clone(op->set_list);
+          new_opt->iterate = NULL;
         }
-        if(set){
-            set = false;
-            setadd(new_opt, buffer);
-            if(*(ptr + 1) != '\0'){
-                new_opt = addoptiter(op);
-                new_opt->set_list = slist_clone(op->set_list);
-                new_opt->iterate = NULL;
-            }
-        }
-        ptr++;
     }
+    ptr++;
+  }
 
-   return 0;
+  return 0;
 }
 
 static int getarg(struct option *op,
