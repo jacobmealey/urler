@@ -141,6 +141,12 @@ static void show_version(void)
   exit(0);
 }
 
+struct set_iterator {
+    struct curl_slist *set_list;
+    struct set_iterator *next;
+    int len; /* length of set_list */
+};
+
 struct option {
   struct curl_slist *url_list;
   struct curl_slist *append_path;
@@ -152,7 +158,8 @@ struct option {
   FILE *url;
   bool urlopen;
   bool jsonout;
-  struct option *iterate;
+  struct set_iterator  *iterate;
+  int iterator_len; /* amount of slist in interator */
   bool verify;
   bool accept_space;
   unsigned char output;
@@ -160,6 +167,7 @@ struct option {
   /* -- stats -- */
   unsigned int urls;
 };
+
 
 #define MAX_QPAIRS 1000
 char *qpairs[MAX_QPAIRS];
@@ -243,12 +251,9 @@ static void setadd(struct option *o,
                    const char *set) /* [component]=[data] */
 {
   struct curl_slist *n;
-  do {
-    n = curl_slist_append(o->set_list, set);
-    if(n)
-      o->set_list = n;
-    o = o->iterate;
-  } while(o);
+  n = curl_slist_append(o->set_list, set);
+  if(n)
+    o->set_list = n;
   
 }
 
@@ -276,98 +281,24 @@ static bool checkoptarg(const char *str,
 
 
 /* returns address of most recently added option */
-struct option *addoptiter(struct option *o)
+struct set_iterator *add_new_iterator(struct option *o)
 {
-  while(o->iterate != NULL) {
-    o = o->iterate;
-  }
-  struct option *opt = malloc(sizeof(struct option));
-  if(opt){
-    memcpy(opt, o, sizeof(struct option));
-    o->iterate = opt;
-    opt->iterate = NULL;
-    return opt;
-  }
-  return NULL;
-}
-
-struct option *optgetend(struct option *o) 
-{
-  struct option *tmp = o;
-  while(tmp->iterate != NULL){
-    tmp = tmp->iterate;
-  }
-  return tmp;
-}
-
-
-
-/* cleans up the options list */
-static int optcleanup(struct option *o) 
-{
-  if(o->iterate) {
-    optcleanup(o->iterate);
+  if(o->iterate == NULL) {
+    printf("ADDING NEW ITERATOR\n");
+    o->iterate = malloc(sizeof(struct set_iterator));
+    memset(o->iterate, 0, sizeof(struct set_iterator));
+    return o->iterate;
   }
 
-  curl_slist_free_all(o->set_list);
-  free(o);
-  return 0;
-}
-
-void print_slist(struct curl_slist *list) 
-{
-  if(list == NULL) {
-    return;
+  struct set_iterator *iter = o->iterate;
+  while(iter->next) {
+    iter = iter->next;
   }
-  /* loop through to find the last item */
-  int i = 0;
-  do {
-    i++;
-    list = list->next;
-  } while(list);
-}
-struct curl_slist *slist_clone(struct curl_slist *list) 
-{
-  struct curl_slist *item = NULL;
 
-  if(list == NULL) {
-    return item;
-  }
-  /* loop through to find the last item */
-  do {
-    item = curl_slist_append(item, list->data);
-    if(item == NULL) return item;
-    list = list->next;
-  } while(list);
+  iter->next = malloc(sizeof(struct set_iterator));
+  memset(iter->next, 0, sizeof(struct set_iterator));
+  return iter->next;
 
-  return item;
-}
-
-/* clones the options list, returns the start of the list */
-struct option* cloneopts(struct option *o) 
-{
-  struct option *new_opt = malloc(sizeof(struct option));
-  if(new_opt == NULL) {
-      return NULL;
-  }
-  struct option *tmp;
-  memcpy(new_opt, o, sizeof(struct option));
-  new_opt->iterate = NULL;
-  int n = 0;
-  do{
-    tmp = addoptiter(new_opt);
-    if(tmp){
-      memcpy(tmp, o, sizeof(struct option));
-      tmp->set_list = slist_clone(o->set_list);
-      tmp->iterate = NULL;
-      o = o->iterate;
-      n++;
-    } else {
-      return NULL;
-    }  
-  } while(o);
-
-  return new_opt;
 }
 
 static int iterate(struct option *op, const char *arg) 
@@ -393,18 +324,12 @@ static int iterate(struct option *op, const char *arg)
     errorf(ERROR_ITER, "Missing arguments for iterator %s", arg);
   }
 
-  //struct option *tmp = cloneopts(op);
-  //struct option *tmp = op;
-
-  /* parse individual tokens from arg */
   offset += 1;
   const char *ptr = &arg[offset];
   const char *_arg = ptr;
-  struct option *new_opt;
 
-  new_opt = op;
-
-  //new_opt = *tmp;
+  struct set_iterator *si = add_new_iterator(op);
+  op->iterator_len +=1;
   ptr = &arg[offset];
   _arg = ptr;
   while(*ptr != '\0') {
@@ -415,18 +340,15 @@ static int iterate(struct option *op, const char *arg)
       _arg = ptr + 1;
       set = true;
     } else if(*(ptr + 1)  == '\0') {
-        strncpy(buffer + offset - 1, _arg, ptr - _arg + 1);
-        buffer[offset + ptr - _arg] = '\0';
-        set = true;
+      strncpy(buffer + offset - 1, _arg, ptr - _arg + 1);
+      buffer[offset + ptr - _arg] = '\0';
+      set = true;
     }
     if(set){
-        set = false;
-        setadd(new_opt, buffer);
-        if(*(ptr + 1) != '\0'){
-          new_opt = addoptiter(op);
-          new_opt->set_list = slist_clone(op->set_list);
-          new_opt->iterate = NULL;
-        }
+      set = false;
+      si->set_list = curl_slist_append(si->set_list, buffer);
+      si->len += 1;
+      printf("buffer: %s\n", buffer);
     }
     ptr++;
   }
@@ -484,8 +406,6 @@ static int getarg(struct option *op,
   else if(!strcmp("--json", flag))
     op->jsonout = true;
   else if(checkoptarg("--iterate", flag, arg)) {
-      if(op->iterate)
-          errorf(ERROR_ITER, "only one --iterate is supported");
       iterate(op, arg);
       *usedarg = 1;
   }
@@ -911,6 +831,51 @@ static void singleurl(struct option *o,
     curl_url_cleanup(uh);
 }
 
+static void permute_urls(struct curl_slist **lists, int num_lists, 
+        char **out, int current_list, struct option *o, 
+        const char *url) {
+  if(current_list== num_lists) {
+      for(int i = 0; i < num_lists; i++) {
+          o->set_list = curl_slist_append(o->set_list, out[i]);
+      }
+      singleurl(o, url);
+      return;
+  }
+
+  struct curl_slist *current_slist = lists[current_list];
+  while(current_slist != NULL) {
+    out[current_list] = current_slist->data;
+    permute_urls(lists, num_lists, out, current_list + 1, o, url);
+    current_slist = current_slist->next;
+  }
+}
+
+static void manyulrs(struct option *o, const char *url)
+{
+  struct curl_slist **list_of_sets;
+  struct set_iterator *cur = o->iterate;
+  list_of_sets = malloc(o->iterator_len* sizeof(struct curl_slist *));
+  for(int i = 0; i < o->iterator_len; i++) {
+    list_of_sets[i] = cur->set_list;
+    cur = cur->next;
+  }
+  char ** currentcomb = malloc(o->iterator_len * sizeof(char*));
+  
+  permute_urls(list_of_sets, o->iterator_len, currentcomb, 0, o, url);
+
+  free(currentcomb);
+  cur = o->iterate;
+  struct set_iterator *prev;
+  for(int i = 0; i < o->iterator_len; i++) {
+      curl_slist_free_all(list_of_sets[i]);
+      prev = cur;
+      cur = cur->next;
+      free(prev);
+  }
+  free(list_of_sets);
+}
+
+
 int main(int argc, const char **argv)
 {
   int exit_status = 0;
@@ -953,11 +918,7 @@ int main(int argc, const char **argv)
           eol--;
         *eol = 0; /* end of URL */
         
-        struct option *opt = &o;
-        while(opt->iterate != NULL){
-           singleurl(opt, buffer);
-           opt= opt->iterate;
-        }
+         singleurl(&o, buffer);
       }
       else {
         /* no newline or no content, skip */
@@ -970,21 +931,18 @@ int main(int argc, const char **argv)
     /* not reading URLs from a file */
     node = o.url_list;
     do {
-      struct option *opt = &o;// cloneopts(&o);
       if(node) {
-        const char *url = node->data;
-        do{
-           singleurl(opt, url);
-           opt = opt->iterate;
-        }while(opt);
+        if(o.iterate)
+          manyulrs(&o, node->data);
+        else
+          singleurl(&o, node->data);
         node = node->next;
       }
       else
-          do{
-              singleurl(opt, NULL);
-              opt = opt->iterate;
-          } while(opt);
-
+        if(o.iterate)
+          manyulrs(&o, NULL);
+        else
+          singleurl(&o, NULL);
     } while(node);
   }
   if(o.jsonout)
@@ -995,8 +953,6 @@ int main(int argc, const char **argv)
   curl_slist_free_all(o.trim_list);
   curl_slist_free_all(o.append_path);
   curl_slist_free_all(o.append_query);
-  if(o.iterate)
-      optcleanup(o.iterate);
   curl_global_cleanup();
   return exit_status;
 }
