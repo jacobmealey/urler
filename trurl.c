@@ -309,18 +309,15 @@ static int iterate(struct option *op, const char *arg)
   memset(buffer, '\0', 4096);
 
   /* check which paramter is being iterated */
-  if(!strncmp("hosts=", arg, 5)) {
-    strncpy(buffer, "host=", 6);
-    offset = 5;
-  } else if(!strncmp("ports=", arg, 6)) {
-    strncpy(buffer, "port=", 6);
-    offset = 5;
-  } else if(!strncmp("schemes=", arg, 8)) {
-    strncpy(buffer, "scheme=", 8);
-    offset = 7;
+  for(int i = 0; variables[i].name; i++){
+      if(!strncmp(arg, variables[i].name, strlen(variables[i].name))) {
+          strncpy(buffer, variables[i].name,  strlen(variables[i].name));
+          buffer[strlen(variables[i].name)] = '=';
+          offset=strlen(variables[i].name) + 1;
+      }
   }
 
-  if(offset == 0 || offset + 1 >= arg_str_len){
+  if(offset == 0){
     errorf(ERROR_ITER, "Missing arguments for iterator %s", arg);
   }
 
@@ -852,17 +849,15 @@ static void permute_urls(struct curl_slist **lists, int num_lists,
 
 static void manyulrs(struct option *o, const char *url)
 {
-  struct curl_slist **list_of_sets;
   struct set_iterator *cur = o->iterate;
-  list_of_sets = malloc(o->iterator_len* sizeof(struct curl_slist *));
+  struct curl_slist **list_of_sets = 
+      malloc(o->iterator_len* sizeof(struct curl_slist *));
+  char ** currentcomb = malloc(o->iterator_len * sizeof(char*));
   for(int i = 0; i < o->iterator_len; i++) {
     list_of_sets[i] = cur->set_list;
     cur = cur->next;
   }
-  char ** currentcomb = malloc(o->iterator_len * sizeof(char*));
-  
   permute_urls(list_of_sets, o->iterator_len, currentcomb, 0, o, url);
-
   free(currentcomb);
   cur = o->iterate;
   struct set_iterator *prev;
