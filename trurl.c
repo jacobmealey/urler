@@ -311,9 +311,9 @@ static int iterate(struct option *op, const char *arg)
   /* check which paramter is being iterated */
   for(int i = 0; variables[i].name; i++){
       if(!strncmp(arg, variables[i].name, strlen(variables[i].name))) {
-          strncpy(buffer, variables[i].name,  strlen(variables[i].name));
-          buffer[strlen(variables[i].name)] = '=';
-          offset=strlen(variables[i].name) + 1;
+          offset = strlen(variables[i].name);
+          strncpy(buffer, variables[i].name, offset);
+          buffer[offset++] = '=';
       }
   }
 
@@ -327,7 +327,7 @@ static int iterate(struct option *op, const char *arg)
 
   struct set_iterator *si = add_new_iterator(op);
   op->iterator_len +=1;
-  ptr = &arg[offset];
+  ptr = &arg[offset] - 1;
   _arg = ptr;
   while(*ptr != '\0') {
     bool set = false;
