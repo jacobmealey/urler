@@ -852,6 +852,7 @@ static void manyulrs(struct option *o, const char *url)
       malloc(o->iterator_len* sizeof(struct curl_slist *));
   if(list_of_sets == NULL)
       errorf(ERROR_MEM, "out of memory");
+  memset(list_of_sets, 0, o->iterator_len * sizeof(struct curl_slist *));
   char ** currentcomb = malloc(o->iterator_len * sizeof(char*));
   if(currentcomb == NULL)
       errorf(ERROR_MEM, "out of memory");
