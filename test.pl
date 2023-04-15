@@ -66,6 +66,9 @@ my @t = (
     "ftp://hello:21/foo|ftp://hello/foo",
     "https://hello:443/foo -s scheme=ftp|ftp://hello:443/foo",
     "ftp://hello:443/foo -s scheme=https|https://hello/foo",
+    "test.org --iterate \"port=30 40\"|http://test.org:30/\nhttp://test.org:40/",
+    "test.org --iterate \"scheme=ftp https\"|ftp://test.org/\nhttps://test.org/",
+    "test.org --iterate \"scheme=ftp https\" --iterate \"port=30 40\"|ftp://test.org:30/\nftp://test.org:40/\nhttps://test.org:30/\nhttps://test.org:40/",
 );
 
 my %json_tests = (
