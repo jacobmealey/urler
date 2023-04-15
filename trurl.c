@@ -5,7 +5,7 @@
  *                            | (__| |_| |  _ <| |___
  *                             \___|\___/|_| \_\_____|
  *
- * Daniel Stenberg, <daniel@haxx.se>, et al.
+ * Copyright (C) Daniel Stenberg, <daniel@haxx.se>, et al.
  *
  * This software is licensed as described in the file COPYING, which
  * you should have received as part of this distribution. The terms
@@ -60,6 +60,7 @@
 #define OUTPUT_QUERY    8
 #define OUTPUT_FRAGMENT 9
 #define OUTPUT_ZONEID   10
+
 #define NUM_COMPONENTS 11 /* including "url" */
 
 #define PROGNAME        "trurl"
@@ -153,7 +154,7 @@ static void help(void)
           " URL COMPONENTS:\n"
           "  "
     );
-  for(i=0; i< NUM_COMPONENTS; i++) {
+  for(i = 0; i< NUM_COMPONENTS; i++) {
     fprintf(stderr, "%s%s", i?", ":"", variables[i].name);
   }
   fprintf(stderr, "\n");
@@ -239,7 +240,7 @@ static void pathadd(struct option *o, const char *path)
     if(n) {
       o->append_path = n;
     }
-    free(urle);
+    curl_free(urle);
   }
 }
 
@@ -263,16 +264,16 @@ static void queryadd(struct option *o, const char *query)
     if(n) {
       o->append_query = n;
     }
-    free(urle);
+    curl_free(urle);
   }
 }
 
 static void appendadd(struct option *o,
                       const char *arg)
 {
-  if(!strncasecmp("path=", arg, 5))
+  if(!strncmp("path=", arg, 5))
     pathadd(o, arg + 5);
-  else if(!strncasecmp("query=", arg, 6))
+  else if(!strncmp("query=", arg, 6))
     queryadd(o, arg + 6);
   else
     errorf(ERROR_APPEND, "--append unsupported component: %s", arg);
@@ -438,10 +439,14 @@ static int getarg(struct option *op,
           checkoptarg("--get", flag, arg)) {
     if(op->format)
       errorf(ERROR_FLAG, "only one --get is supported");
+    if(op->jsonout)
+      errorf(ERROR_FLAG, "--get is mututally exclusive with --json");
     op->format = arg;
     *usedarg = 1;
   }
-  else if(!strcmp("--json", flag))
+  else if(!strcmp("--json", flag)) {
+    if(op->format)
+      errorf(ERROR_FLAG, "--json is mututally exclusive with --get");
     op->jsonout = true;
   else if(checkoptarg("--iterate", flag, arg)) {
       iterate(op, arg);
@@ -466,18 +471,18 @@ static int getarg(struct option *op,
 static void showqkey(const char *key, size_t klen, bool urldecode)
 {
   int i;
-  for(i=0; i< nqpairs; i++) {
+  for(i = 0; i< nqpairs; i++) {
     if(urldecode) {
       if(!strncmp(key, qpairsdec[i], klen) &&
          (qpairsdec[i][klen] == '=')) {
-        fputs(&qpairsdec[i][klen+1], stdout);
+        fputs(&qpairsdec[i][klen + 1], stdout);
         break;
       }
     }
     else {
       if(!strncmp(key, qpairs[i], klen) &&
          (qpairs[i][klen] == '=')) {
-        fputs(&qpairs[i][klen+1], stdout);
+        fputs(&qpairs[i][klen + 1], stdout);
         break;
       }
     }
@@ -489,12 +494,21 @@ static void get(struct option *op, CURLU *uh)
   FILE *stream = stdout;
   const char *ptr = op->format;
   bool done = false;
+  char startbyte = 0;
+  char endbyte = 0;
 
   while(ptr && *ptr && !done) {
-    if('{' == *ptr) {
-      if('{' == ptr[1]) {
+    if(!startbyte && (('{' == *ptr) || ('[' == *ptr))) {
+      startbyte = *ptr;
+      if('{' == *ptr)
+        endbyte = '}';
+      else
+        endbyte = ']';
+    }
+    if(startbyte == *ptr) {
+      if(startbyte == ptr[1]) {
         /* an escaped {-letter */
-        fputc('{', stream);
+        fputc(startbyte, stream);
         ptr += 2;
       }
       else {
@@ -504,10 +518,11 @@ static void get(struct option *op, CURLU *uh)
         size_t vlen;
         int i;
         bool urldecode = true;
-        end = strchr(ptr, '}');
+        end = strchr(ptr, endbyte);
         ptr++; /* pass the { */
         if(!end) {
           /* syntax error */
+          fputc(startbyte, stream);
           continue;
         }
         /* {path} {:path} */
@@ -528,7 +543,7 @@ static void get(struct option *op, CURLU *uh)
         else {
           for(i = 0; variables[i].name; i++) {
             if((strlen(variables[i].name) == vlen) &&
-               !strncasecmp(ptr, variables[i].name, vlen)) {
+               !strncmp(ptr, variables[i].name, vlen)) {
               char *nurl;
               CURLUcode rc;
               rc = curl_url_get(uh, variables[i].part, &nurl,
@@ -574,6 +589,15 @@ static void get(struct option *op, CURLU *uh)
       case 't':
         fputc('\t', stream);
         break;
+      case '\\':
+        fputc('\\', stream);
+        break;
+      case '{':
+        fputc('{', stream);
+        break;
+      case '[':
+        fputc('[', stream);
+        break;
       default:
         /* unknown, just output this */
         fputc(*ptr, stream);
@@ -596,8 +620,8 @@ static void set(CURLU *uh,
   struct curl_slist *node;
   bool varset[NUM_COMPONENTS];
   memset(varset, 0, sizeof(varset));
-  //printf("node list in set: %p\n", o->set_list);
-  for(node =  o->set_list; node; node=node->next) {
+  for(node =  o->set_list; node; node = node->next) {
+
     char *set = node->data;
     int i;
     char *ptr = strchr(set, '=');
@@ -609,9 +633,9 @@ static void set(CURLU *uh,
         urlencode = false;
         vlen--;
       }
-      for(i=0; variables[i].name; i++) {
+      for(i = 0; variables[i].name; i++) {
         if((strlen(variables[i].name) == vlen) &&
-           !strncasecmp(set, variables[i].name, vlen)) {
+           !strncmp(set, variables[i].name, vlen)) {
           CURLUcode rc;
           if(varset[i] && !o->iterate)
             errorf(ERROR_SET, "A component can only be set once per URL (%s)",
@@ -701,13 +725,14 @@ static void json(struct option *o, CURLU *uh)
         fputs(",\n", stdout);
       printf("    \"%s\": ", variables[i].name);
       jsonString(stdout, nurl, 0, false);
+      curl_free(nurl);
     }
     curl_free(nurl);
   }
   if(nqpairs) {
     int i;
     fputs(",\n    \"params\": [\n", stdout);
-    for(i=0 ; i < nqpairs; i++) {
+    for(i = 0 ; i < nqpairs; i++) {
       char *sep = strchr(qpairsdec[i], '=');
       if(i)
         fputs(",\n", stdout);
@@ -728,9 +753,9 @@ static void json(struct option *o, CURLU *uh)
 static void trim(struct option *o)
 {
   struct curl_slist *node;
-  for(node = o->trim_list; node; node=node->next) {
+  for(node = o->trim_list; node; node = node->next) {
     char *instr = node->data;
-    if(strncasecmp(instr, "query", 5))
+    if(strncmp(instr, "query", 5))
       /* for now we can only trim query components */
       errorf(ERROR_TRIM, "Unsupported trim component: %s", instr);
     char *ptr = strchr(instr, '=');
@@ -747,7 +772,7 @@ static void trim(struct option *o)
       if(pattern)
         inslen--;
 
-      for(i=0 ; i < nqpairs; i++) {
+      for(i = 0 ; i < nqpairs; i++) {
         char *q = qpairs[i];
         char *sep = strchr(q, '=');
         size_t qlen;
@@ -790,29 +815,31 @@ static char *memdupdec(char *source, size_t len)
   char *left = NULL;
   char *right = NULL;
   char *ret = NULL;
+  char *str, *dup;
   int leftlen = 0;
   int rightlen = 0;
 
   left = curl_easy_unescape(NULL, source, sep ? (size_t)(sep - source) : len,
                             &leftlen);
   if(sep)
-    right = curl_easy_unescape(NULL, sep + 1 , len - (sep - source) - 1,
+    right = curl_easy_unescape(NULL, sep + 1, len - (sep - source) - 1,
                                &rightlen);
 
-
-  ret = curl_maprintf("%.*s%s%.*s", leftlen, left,
-                       right ? "=":"",
-                       rightlen, right?right:"");
-  curl_free(left);
+  str = curl_maprintf("%.*s%s%.*s", leftlen, left,
+                      right ? "=":"",
+                      rightlen, right?right:"");
   curl_free(right);
-  return ret;
+  curl_free(left);
+  dup = strdup(str);
+  curl_free(str);
+  return dup;
 }
 
 
 static void freeqpairs(void)
 {
   int i;
-  for(i=0; i<nqpairs; i++) {
+  for(i = 0; i<nqpairs; i++) {
     free(qpairs[i]);
     qpairs[i] = NULL;
     free(qpairsdec[i]);
@@ -871,10 +898,13 @@ static void qpair2query(CURLU *uh, struct option *o)
 {
   int i;
   int rc;
-  char *nq=NULL;
-  for(i=0; i<nqpairs; i++) {
+  char *nq = NULL;
+  char *oldnq;
+  for(i = 0; i<nqpairs; i++) {
+    oldnq = nq;
     nq = curl_maprintf("%s%s%s", nq?nq:"",
                        (nq && *nq && *qpairs[i])? o->qsep: "", qpairs[i]);
+    curl_free(oldnq);
   }
   if(nq) {
     rc = curl_url_set(uh, CURLUPART_QUERY, nq, 0);
@@ -929,7 +959,7 @@ static void singleurl(struct option *o,
     set(uh, o);
 
     /* append path segments */
-    for(p = o->append_path; p; p=p->next) {
+    for(p = o->append_path; p; p = p->next) {
       char *apath = p->data;
       char *opath;
       char *npath;
@@ -956,7 +986,7 @@ static void singleurl(struct option *o,
     extractqpairs(uh, o);
 
     /* append query segments */
-    for(p = o->append_query; p; p=p->next) {
+    for(p = o->append_query; p; p = p->next) {
       addqpair(p->data, strlen(p->data));
     }
 
