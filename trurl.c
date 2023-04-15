@@ -284,8 +284,9 @@ static bool checkoptarg(const char *str,
 struct set_iterator *add_new_iterator(struct option *o)
 {
   if(o->iterate == NULL) {
-    printf("ADDING NEW ITERATOR\n");
     o->iterate = malloc(sizeof(struct set_iterator));
+    if(o->iterate == NULL)
+        errorf(ERROR_MEM, "not enough memory");
     memset(o->iterate, 0, sizeof(struct set_iterator));
     return o->iterate;
   }
@@ -296,6 +297,8 @@ struct set_iterator *add_new_iterator(struct option *o)
   }
 
   iter->next = malloc(sizeof(struct set_iterator));
+  if(iter->next == NULL)
+      errorf(ERROR_MEM, "not enough memory");
   memset(iter->next, 0, sizeof(struct set_iterator));
   return iter->next;
 
@@ -307,7 +310,6 @@ static int iterate(struct option *op, const char *arg)
   int arg_str_len = strlen(arg); /* total length of arguments */
   char buffer[4096];
   memset(buffer, '\0', 4096);
-
   /* check which paramter is being iterated */
   for(int i = 0; variables[i].name; i++){
       if(!strncmp(arg, variables[i].name, strlen(variables[i].name))) {
@@ -317,9 +319,8 @@ static int iterate(struct option *op, const char *arg)
       }
   }
 
-  if(offset == 0){
+  if(offset == 0 || offset + 1 >= arg_str_len)
     errorf(ERROR_ITER, "Missing arguments for iterator %s", arg);
-  }
 
   offset += 1;
   const char *ptr = &arg[offset];
@@ -345,7 +346,6 @@ static int iterate(struct option *op, const char *arg)
       set = false;
       si->set_list = curl_slist_append(si->set_list, buffer);
       si->len += 1;
-      printf("buffer: %s\n", buffer);
     }
     ptr++;
   }
@@ -832,19 +832,17 @@ static void permute_urls(struct curl_slist **lists, int num_lists,
         char **out, int current_list, struct option *o, 
         const char *url) {
   if(current_list== num_lists) {
-      for(int i = 0; i < num_lists; i++) {
+      for(int i = 0; i < num_lists; i++) 
           o->set_list = curl_slist_append(o->set_list, out[i]);
-      }
       singleurl(o, url);
       return;
   }
-
   struct curl_slist *current_slist = lists[current_list];
-  while(current_slist != NULL) {
+  do {
     out[current_list] = current_slist->data;
     permute_urls(lists, num_lists, out, current_list + 1, o, url);
     current_slist = current_slist->next;
-  }
+  } while(current_slist);
 }
 
 static void manyulrs(struct option *o, const char *url)
@@ -852,15 +850,19 @@ static void manyulrs(struct option *o, const char *url)
   struct set_iterator *cur = o->iterate;
   struct curl_slist **list_of_sets = 
       malloc(o->iterator_len* sizeof(struct curl_slist *));
+  if(list_of_sets == NULL)
+      errorf(ERROR_MEM, "out of memory");
   char ** currentcomb = malloc(o->iterator_len * sizeof(char*));
+  if(currentcomb == NULL)
+      errorf(ERROR_MEM, "out of memory");
   for(int i = 0; i < o->iterator_len; i++) {
     list_of_sets[i] = cur->set_list;
     cur = cur->next;
   }
   permute_urls(list_of_sets, o->iterator_len, currentcomb, 0, o, url);
-  free(currentcomb);
   cur = o->iterate;
   struct set_iterator *prev;
+  free(currentcomb);
   for(int i = 0; i < o->iterator_len; i++) {
       curl_slist_free_all(list_of_sets[i]);
       prev = cur;
