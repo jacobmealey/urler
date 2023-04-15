@@ -286,7 +286,6 @@ static void setadd(struct option *o,
   n = curl_slist_append(o->set_list, set);
   if(n)
     o->set_list = n;
-  
 }
 
 static void trimadd(struct option *o,
@@ -369,7 +368,7 @@ static int iterate(struct option *op, const char *arg)
       buffer[offset + ptr - _arg - 1] = '\0';
       _arg = ptr + 1;
       set = true;
-    } 
+    }
     else if(*(ptr + 1)  == '\0') {
       strncpy(buffer + offset - 1, _arg, ptr - _arg + 1);
       buffer[offset + ptr - _arg] = '\0';
@@ -449,6 +448,7 @@ static int getarg(struct option *op,
     if(op->format)
       errorf(ERROR_FLAG, "--json is mututally exclusive with --get");
     op->jsonout = true;
+  }
   else if(checkoptarg("--iterate", flag, arg)) {
       iterate(op, arg);
       *usedarg = 1;
@@ -815,7 +815,6 @@ static char *memdupdec(char *source, size_t len)
   char *sep = memchr(source, '=', len);
   char *left = NULL;
   char *right = NULL;
-  char *ret = NULL;
   char *str, *dup;
   int leftlen = 0;
   int rightlen = 0;
@@ -1026,7 +1025,7 @@ static void singleurl(struct option *o,
 }
 
 static void permute_urls(struct curl_slist **lists, int num_lists,
-        char **out, int current_list, struct option *o, 
+        char **out, int current_list, struct option *o,
         const char *url) {
   if(current_list == num_lists) {
     for(int i = 0; i < num_lists; i++)
@@ -1111,8 +1110,7 @@ int main(int argc, const char **argv)
           /* CRLF detected */
           eol--;
         *eol = 0; /* end of URL */
-        
-         singleurl(&o, buffer);
+        singleurl(&o, buffer);
       }
       else {
         /* no newline or no content, skip */
