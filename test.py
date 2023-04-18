@@ -51,9 +51,9 @@ class TestCase:
             return False
         output = subprocess.run(
             shlex.split(
-            (VALGRINDTEST if runWithValgrind else "") + 
-            f"{BASECMD} {self.cmdline}"),
-            capture_output=True,
+                (VALGRINDTEST if runWithValgrind else "") +
+                f"{BASECMD} {self.cmdline}"
+            ), capture_output=True,
         )
 
         # testresult is bytes by default, change to string and remove line endings with strip if we expect a string
