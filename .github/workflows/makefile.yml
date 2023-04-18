@@ -42,7 +42,7 @@ jobs:
 
     - name: test
       run: |
-        if [ "${{matrix.build.name}}" = "clang sanitizers"i ] i
+        if [ "${{matrix.build.name}}" = "clang sanitizers" ]
         then 
           make test
         else 
