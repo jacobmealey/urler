@@ -14,8 +14,10 @@ jobs:
       matrix:
         build:
         - name: default
+          test: test-memory
         - name: clang sanitizers
           install_packages: clang
+          test: test
           make_opts: >
             CC=clang
             CFLAGS="-fsanitize=address,undefined,signed-integer-overflow -Wformat -Werror=format-security -Werror=array-bounds -g"
@@ -41,14 +43,7 @@ jobs:
       run: ./trurl -v
 
     - name: test
-      run: |
-        if [ "${{matrix.build.name}}" = "clang sanitizers" ]
-        then 
-          make test
-        else 
-          make test-memory
-        fi
-      shell: bash
+      run: make ${{matrix.build.test}}
 
   build-cygwin:
     runs-on: windows-latest
