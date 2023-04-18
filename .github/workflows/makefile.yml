@@ -20,8 +20,6 @@ jobs:
             CC=clang
             CFLAGS="-fsanitize=address,undefined,signed-integer-overflow -Wformat -Werror=format-security -Werror=array-bounds -g"
             LDFLAGS="-fsanitize=address,undefined,signed-integer-overflow -g"
-          exclude:
-            steps: [test-memory]
 
     steps:
     - uses: actions/checkout@v3
@@ -43,10 +41,14 @@ jobs:
       run: ./trurl -v
 
     - name: test
-      run: make test
-    
-    - name: test-memory
-      run: make test-memory
+      run: |
+        if [ "${{matrix.build.name}}" = "clang sanitizers"i ] i
+        then 
+          make test
+        else 
+          make test-memory
+        fi
+      shell: bash
 
   build-cygwin:
     runs-on: windows-latest
