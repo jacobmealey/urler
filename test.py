@@ -8,6 +8,7 @@ import shlex
 from dataclasses import dataclass, asdict
 
 TESTFILE = "./tests.json"
+VALGRINDTEST = "valgrind --error-exitcode=1 --leak-check=full -q "
 if sys.platform == "win32" or sys.platform == "cygwin":
     BASECMD = "./trurl.exe"  # windows
 else:
@@ -44,12 +45,12 @@ class TestCase:
         self.commandOutput: CommandOutput = None
         self.testPassed: bool = False
 
-    def runCommand(self, stdinkeyword: str):
+    def runCommand(self, stdinkeyword: str, runWithValgrind):
         # returns false if the command does not contain keyword
         if self.cmdline.find(stdinkeyword) == -1:
             return False
         output = subprocess.run(
-            shlex.split(f"{BASECMD} {self.cmdline}"),
+            shlex.split((VALGRINDTEST if runWithValgrind else "") + f"{BASECMD} {self.cmdline}"),
             capture_output=True,
         )
 
@@ -83,7 +84,7 @@ class TestCase:
         print(NOCOLOR, end="")
 
         for item in self.expected:
-            itemFail = self.expected[item] != asdict(self.commandOutput)[item]
+            itemFail = self.expected[item] != asdict(self.commandOutput)[item] and self.commandOutput.returncode == 1
 
             print(f"--- {item} --- ")
             print("expected: ")
@@ -108,23 +109,24 @@ def main():
     # if argv[1] exists and starts with int
     stdinfilter = ""
     testIndexesToRun = list(range(len(allTests)))
+    runWithValgrind = False
 
-    if len(sys.argv) > 1:
-        if sys.argv[1][0].isnumeric():
-            # run only test cases separated by ","
+    for arg in sys.argv[1:]:
+        if arg[0].isnumeric():
             testIndexesToRun = []
 
-            for caseIndex in sys.argv[1].split(","):
+            for caseIndex in arg.split(","):
                 testIndexesToRun.append(int(caseIndex))
-
+        elif(arg == "--with-valgrind"):
+            runWithValgrind = True
         else:
-            stdinfilter = sys.argv[1]
+            stdinfilter = arg
 
     numTestsPassed = 0
     for testIndex in testIndexesToRun:
         test = TestCase(testIndex, **allTests[testIndex])
 
-        if test.runCommand(stdinfilter):
+        if test.runCommand(stdinfilter, runWithValgrind):
             if test.test():  # passed
                 test.printConcise()
                 numTestsPassed += 1
