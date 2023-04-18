@@ -50,7 +50,8 @@ class TestCase:
         if self.cmdline.find(stdinkeyword) == -1:
             return False
         output = subprocess.run(
-            shlex.split((VALGRINDTEST if runWithValgrind else "") + f"{BASECMD} {self.cmdline}"),
+            shlex.split(
+            (VALGRINDTEST if runWithValgrind else "") + f"{BASECMD} {self.cmdline}"),
             capture_output=True,
         )
 
@@ -84,7 +85,8 @@ class TestCase:
         print(NOCOLOR, end="")
 
         for item in self.expected:
-            itemFail = self.expected[item] != asdict(self.commandOutput)[item] and self.commandOutput.returncode == 1
+            itemFail = self.expected[item] != asdict(self.commandOutput)[item] \
+                    and self.commandOutput.returncode == 1
 
             print(f"--- {item} --- ")
             print("expected: ")
@@ -117,7 +119,7 @@ def main():
 
             for caseIndex in arg.split(","):
                 testIndexesToRun.append(int(caseIndex))
-        elif(arg == "--with-valgrind"):
+        elif arg == "--with-valgrind":
             runWithValgrind = True
         else:
             stdinfilter = arg

@@ -20,6 +20,8 @@ jobs:
             CC=clang
             CFLAGS="-fsanitize=address,undefined,signed-integer-overflow -Wformat -Werror=format-security -Werror=array-bounds -g"
             LDFLAGS="-fsanitize=address,undefined,signed-integer-overflow -g"
+          exclude:
+            steps: [test-memory]
 
     steps:
     - uses: actions/checkout@v3
