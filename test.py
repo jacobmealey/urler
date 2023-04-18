@@ -51,7 +51,8 @@ class TestCase:
             return False
         output = subprocess.run(
             shlex.split(
-            (VALGRINDTEST if runWithValgrind else "") + f"{BASECMD} {self.cmdline}"),
+            (VALGRINDTEST if runWithValgrind else "") + 
+            f"{BASECMD} {self.cmdline}"),
             capture_output=True,
         )
 
@@ -85,7 +86,7 @@ class TestCase:
         print(NOCOLOR, end="")
 
         for item in self.expected:
-            itemFail = self.expected[item] != asdict(self.commandOutput)[item] \
+            itemFail = self.expected[item] != asdict(self.commandOutput)[item]\
                     and self.commandOutput.returncode == 1
 
             print(f"--- {item} --- ")
