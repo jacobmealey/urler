@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from typing import Any
+from typing import Any, Optional
 import json
 import subprocess
 import sys
@@ -8,15 +8,12 @@ import shlex
 from dataclasses import dataclass, asdict
 
 TESTFILE = "./tests.json"
-VALGRINDTEST = "valgrind --error-exitcode=1 --leak-check=full -q "
-if sys.platform == "win32" or sys.platform == "cygwin":
-    BASECMD = "./trurl.exe"  # windows
-else:
-    BASECMD = "./trurl"  # linux
+BASECMD = "./trurl"
+VALGRINDTEST = "valgrind"
+VALGRINDARGS = ["--error-exitcode=1", "--leak-check=full", "-q"]
 
 RED = "\033[91m"  # used to mark unsuccessful tests
 NOCOLOR = "\033[0m"
-TAB = "\x09"
 
 
 @dataclass
@@ -26,45 +23,42 @@ class CommandOutput:
     stderr: str
 
 
-def stripDict(d):
-    new = {}
-    for key in d:
-        if type(d[key]) == str:
-            new[key] = d[key].strip()
-        else:
-            new[key] = d[key]
-
-    return new
-
-
 class TestCase:
     def __init__(self, testIndex, **testCase):
         self.testIndex = testIndex
-        self.cmdline = testCase["cmdline"]
-        self.expected = stripDict(testCase["expected"])
+        self.arguments = testCase["input"]["arguments"]
+        self.expected = testCase["expected"]
         self.commandOutput: CommandOutput = None
         self.testPassed: bool = False
 
-    def runCommand(self, stdinkeyword: str, runWithValgrind):
-        # returns false if the command does not contain keyword
-        if self.cmdline.find(stdinkeyword) == -1:
+    def runCommand(self, cmdfilter: Optional[str], runWithValgrind: False):
+        # Skip test if none of the arguments contain the keyword
+        if cmdfilter and all(cmdfilter not in arg for arg in self.arguments):
             return False
+
+        cmd = [BASECMD]
+        args = self.arguments
+        if runWithValgrind:
+            cmd = [VALGRINDTEST]
+            args = VALGRINDARGS + [BASECMD] + self.arguments
+
         output = subprocess.run(
-            shlex.split(
-                (VALGRINDTEST if runWithValgrind else "") +
-                f"{BASECMD} {self.cmdline}"
-            ), capture_output=True,
+            cmd + args,
+            capture_output=True,
+            encoding="utf-8"
         )
 
-        # testresult is bytes by default, change to string and remove line endings with strip if we expect a string
         if type(self.expected["stdout"]) == str:
-            stdout = output.stdout.decode().strip()
+            stdout = output.stdout
         else:
             # if we dont expect string, parse to json
-            stdout = json.loads(output.stdout)
+            try:
+                stdout = json.loads(output.stdout)
+            except json.decoder.JSONDecodeError:
+                stdout = None
 
         # assume stderr is always going to be string
-        stderr = output.stderr.decode().strip()
+        stderr = output.stderr
 
         self.commandOutput = CommandOutput(stdout, output.returncode, stderr)
         return True
@@ -100,8 +94,8 @@ class TestCase:
         print()
 
     def printConcise(self):
-        o = f"{self.testIndex}: {'passed' if self.testPassed else 'failed'}{TAB}'{self.cmdline}'"
-        print(o)
+        result = 'passed' if self.testPassed else 'failed'
+        print(f"{self.testIndex}: {result}\t{shlex.join(self.arguments)}")
 
 
 def main():
@@ -110,7 +104,7 @@ def main():
         testIndexesToRun = []
 
     # if argv[1] exists and starts with int
-    stdinfilter = ""
+    cmdfilter = ""
     testIndexesToRun = list(range(len(allTests)))
     runWithValgrind = False
 
@@ -123,13 +117,13 @@ def main():
         elif arg == "--with-valgrind":
             runWithValgrind = True
         else:
-            stdinfilter = arg
+            cmdfilter = sys.argv[1]
 
     numTestsPassed = 0
     for testIndex in testIndexesToRun:
         test = TestCase(testIndex, **allTests[testIndex])
 
-        if test.runCommand(stdinfilter, runWithValgrind):
+        if test.runCommand(cmdfilter, runWithValgrind):
             if test.test():  # passed
                 test.printConcise()
                 numTestsPassed += 1

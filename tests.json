@@ -1,710 +1,1274 @@
 [
     {
-        "cmdline": "example.com",
+        "input": {
+            "arguments": [
+                "example.com"
+            ]
+        },
         "expected": {
-            "stdout": "http://example.com/",
+            "stdout": "http://example.com/\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "http://example.com",
+        "input": {
+            "arguments": [
+                "http://example.com"
+            ]
+        },
         "expected": {
-            "stdout": "http://example.com/",
+            "stdout": "http://example.com/\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "https://example.com",
+        "input": {
+            "arguments": [
+                "https://example.com"
+            ]
+        },
         "expected": {
-            "stdout": "https://example.com/",
+            "stdout": "https://example.com/\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "hp://example.com",
+        "input": {
+            "arguments": [
+                "hp://example.com"
+            ]
+        },
         "expected": {
-            "stdout": "hp://example.com/",
+            "stdout": "hp://example.com/\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "",
+        "input": {
+            "arguments": []
+        },
         "expected": {
             "stdout": "",
-            "stderr": "trurl error: not enough input for a URL\ntrurl error: Try trurl -h for help",
+            "stderr": "trurl error: not enough input for a URL\ntrurl error: Try trurl -h for help\n",
             "returncode": 7
         }
     },
     {
-        "cmdline": "ftp.example.com",
+        "input": {
+            "arguments": [
+                "ftp.example.com"
+            ]
+        },
         "expected": {
-            "stdout": "ftp://ftp.example.com/",
+            "stdout": "ftp://ftp.example.com/\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "https://example.com/../moo",
+        "input": {
+            "arguments": [
+                "https://example.com/../moo"
+            ]
+        },
         "expected": {
-            "stdout": "https://example.com/moo",
+            "stdout": "https://example.com/moo\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "https://example.com/.././moo",
+        "input": {
+            "arguments": [
+                "https://example.com/.././moo"
+            ]
+        },
         "expected": {
-            "stdout": "https://example.com/moo",
+            "stdout": "https://example.com/moo\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "https://example.com/test/../moo",
+        "input": {
+            "arguments": [
+                "https://example.com/test/../moo"
+            ]
+        },
         "expected": {
-            "stdout": "https://example.com/moo",
+            "stdout": "https://example.com/moo\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "localhost --append path=moo",
+        "input": {
+            "arguments": [
+                "localhost",
+                "--append",
+                "path=moo"
+            ]
+        },
         "expected": {
-            "stdout": "http://localhost/moo",
+            "stdout": "http://localhost/moo\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "localhost -a path=moo",
+        "input": {
+            "arguments": [
+                "localhost",
+                "-a",
+                "path=moo"
+            ]
+        },
         "expected": {
-            "stdout": "http://localhost/moo",
+            "stdout": "http://localhost/moo\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "--set host=moo --set scheme=http",
+        "input": {
+            "arguments": [
+                "--set",
+                "host=moo",
+                "--set",
+                "scheme=http"
+            ]
+        },
         "expected": {
-            "stdout": "http://moo/",
+            "stdout": "http://moo/\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "-s host=moo -s scheme=http",
+        "input": {
+            "arguments": [
+                "-s",
+                "host=moo",
+                "-s",
+                "scheme=http"
+            ]
+        },
         "expected": {
-            "stdout": "http://moo/",
+            "stdout": "http://moo/\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "--set host=moo --set scheme=https --set port=999",
+        "input": {
+            "arguments": [
+                "--set",
+                "host=moo",
+                "--set",
+                "scheme=https",
+                "--set",
+                "port=999"
+            ]
+        },
         "expected": {
-            "stdout": "https://moo:999/",
+            "stdout": "https://moo:999/\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "--set host=moo --set scheme=ftps --set path=/hello",
+        "input": {
+            "arguments": [
+                "--set",
+                "host=moo",
+                "--set",
+                "scheme=ftps",
+                "--set",
+                "path=/hello"
+            ]
+        },
         "expected": {
-            "stdout": "ftps://moo/hello",
+            "stdout": "ftps://moo/hello\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "--url https://curl.se --set host=example.com",
+        "input": {
+            "arguments": [
+                "--url",
+                "https://curl.se",
+                "--set",
+                "host=example.com"
+            ]
+        },
         "expected": {
-            "stdout": "https://example.com/",
+            "stdout": "https://example.com/\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "--set host=example.com --set scheme=ftp",
+        "input": {
+            "arguments": [
+                "--set",
+                "host=example.com",
+                "--set",
+                "scheme=ftp"
+            ]
+        },
         "expected": {
-            "stdout": "ftp://example.com/",
+            "stdout": "ftp://example.com/\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "--url https://curl.se/we/are.html --redirect here.html",
+        "input": {
+            "arguments": [
+                "--url",
+                "https://curl.se/we/are.html",
+                "--redirect",
+                "here.html"
+            ]
+        },
         "expected": {
-            "stdout": "https://curl.se/we/here.html",
+            "stdout": "https://curl.se/we/here.html\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "--url https://curl.se/we/../are.html --set port=8080",
+        "input": {
+            "arguments": [
+                "--url",
+                "https://curl.se/we/../are.html",
+                "--set",
+                "port=8080"
+            ]
+        },
         "expected": {
-            "stdout": "https://curl.se:8080/are.html",
+            "stdout": "https://curl.se:8080/are.html\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "https://curl.se:22/ -s port=443",
+        "input": {
+            "arguments": [
+                "https://curl.se:22/",
+                "-s",
+                "port=443"
+            ]
+        },
         "expected": {
-            "stdout": "https://curl.se/",
+            "stdout": "https://curl.se/\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "https://curl.se:22/ -s port=443 --get {url}",
+        "input": {
+            "arguments": [
+                "https://curl.se:22/",
+                "-s",
+                "port=443",
+                "--get",
+                "{url}"
+            ]
+        },
         "expected": {
-            "stdout": "https://curl.se/",
+            "stdout": "https://curl.se/\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "--url https://curl.se/we/are.html --get \"{path}\"",
+        "input": {
+            "arguments": [
+                "--url",
+                "https://curl.se/we/are.html",
+                "--get",
+                "{path}"
+            ]
+        },
         "expected": {
-            "stdout": "/we/are.html",
+            "stdout": "/we/are.html\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "--url https://curl.se/we/are.html --get \"{port}\"",
+        "input": {
+            "arguments": [
+                "--url",
+                "https://curl.se/we/are.html",
+                "--get",
+                "{port}"
+            ]
+        },
         "expected": {
-            "stdout": "443",
+            "stdout": "443\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "--url https://curl.se/we/are.html --get \"{scheme}\"",
+        "input": {
+            "arguments": [
+                "--url",
+                "https://curl.se/we/are.html",
+                "--get",
+                "{scheme}"
+            ]
+        },
         "expected": {
-            "stdout": "https",
+            "stdout": "https\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "--url https://hello@curl.se/we/are.html --get \"{user}\"",
+        "input": {
+            "arguments": [
+                "--url",
+                "https://hello@curl.se/we/are.html",
+                "--get",
+                "{user}"
+            ]
+        },
         "expected": {
-            "stdout": "hello",
+            "stdout": "hello\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "--url https://hello:secret@curl.se/we/are.html --get \"{password}\"",
+        "input": {
+            "arguments": [
+                "--url",
+                "https://hello:secret@curl.se/we/are.html",
+                "--get",
+                "{password}"
+            ]
+        },
         "expected": {
-            "stdout": "secret",
+            "stdout": "secret\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "--url \"imap://hello:secret;crazy@curl.se/we/are.html\" --get \"{options}\"",
+        "input": {
+            "arguments": [
+                "--url",
+                "imap://hello:secret;crazy@curl.se/we/are.html",
+                "--get",
+                "{options}"
+            ]
+        },
         "expected": {
-            "stdout": "crazy",
+            "stdout": "crazy\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "--url https://curl.se/we/are.html --get \"{host}\"",
+        "input": {
+            "arguments": [
+                "--url",
+                "https://curl.se/we/are.html",
+                "--get",
+                "{host}"
+            ]
+        },
         "expected": {
-            "stdout": "curl.se",
+            "stdout": "curl.se\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "--url https://10.1/we/are.html --get \"{host}\"",
+        "input": {
+            "arguments": [
+                "--url",
+                "https://10.1/we/are.html",
+                "--get",
+                "{host}"
+            ]
+        },
         "expected": {
-            "stdout": "10.0.0.1",
+            "stdout": "10.0.0.1\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "--url https://[fe80::0000:20c:29ff:fe9c:409b]:8080/we/are.html --get \"{host}\"",
+        "input": {
+            "arguments": [
+                "--url",
+                "https://[fe80::0000:20c:29ff:fe9c:409b]:8080/we/are.html",
+                "--get",
+                "{host}"
+            ]
+        },
         "expected": {
-            "stdout": "[fe80::20c:29ff:fe9c:409b]",
+            "stdout": "[fe80::20c:29ff:fe9c:409b]\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "--url https://[fe80::0000:20c:29ff:fe9c:409b%euth0]:8080/we/are.html --get \"{zoneid}\"",
+        "input": {
+            "arguments": [
+                "--url",
+                "https://[fe80::0000:20c:29ff:fe9c:409b%euth0]:8080/we/are.html",
+                "--get",
+                "{zoneid}"
+            ]
+        },
         "expected": {
-            "stdout": "euth0",
+            "stdout": "euth0\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "--url https://[fe80::0000:20c:29ff:fe9c:409b%eth0]:8080/we/are.html --get \"{zoneid}\"",
+        "input": {
+            "arguments": [
+                "--url",
+                "https://[fe80::0000:20c:29ff:fe9c:409b%eth0]:8080/we/are.html",
+                "--get",
+                "{zoneid}"
+            ]
+        },
         "expected": {
-            "stdout": "eth0",
+            "stdout": "eth0\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "--url \"https://curl.se/we/are.html?user=many#more\" --get \"{query}\"",
+        "input": {
+            "arguments": [
+                "--url",
+                "https://curl.se/we/are.html?user=many#more",
+                "--get",
+                "{query}"
+            ]
+        },
         "expected": {
-            "stdout": "user=many",
+            "stdout": "user=many\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "--url \"https://curl.se/we/are.html?user=many#more\" --get \"{fragment}\"",
+        "input": {
+            "arguments": [
+                "--url",
+                "https://curl.se/we/are.html?user=many#more",
+                "--get",
+                "{fragment}"
+            ]
+        },
         "expected": {
-            "stdout": "more",
+            "stdout": "more\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "--url https://curl.se/we/are.html -g \"{port}\"",
+        "input": {
+            "arguments": [
+                "--url",
+                "https://curl.se/we/are.html",
+                "-g",
+                "{port}"
+            ]
+        },
         "expected": {
-            "stdout": "443",
+            "stdout": "443\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "--url https://curl.se/hello --append path=you",
+        "input": {
+            "arguments": [
+                "--url",
+                "https://curl.se/hello",
+                "--append",
+                "path=you"
+            ]
+        },
         "expected": {
-            "stdout": "https://curl.se/hello/you",
+            "stdout": "https://curl.se/hello/you\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "--url https://curl.se/hello --append \"path=you index.html\"",
+        "input": {
+            "arguments": [
+                "--url",
+                "https://curl.se/hello",
+                "--append",
+                "path=you index.html"
+            ]
+        },
         "expected": {
-            "stdout": "https://curl.se/hello/you%20index.html",
+            "stdout": "https://curl.se/hello/you%20index.html\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "--url \"https://curl.se?name=hello\" --append query=search=string",
+        "input": {
+            "arguments": [
+                "--url",
+                "https://curl.se?name=hello",
+                "--append",
+                "query=search=string"
+            ]
+        },
         "expected": {
-            "stdout": "https://curl.se/?name=hello&search=string",
+            "stdout": "https://curl.se/?name=hello&search=string\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "--url https://curl.se/hello --set user=:hej:",
+        "input": {
+            "arguments": [
+                "--url",
+                "https://curl.se/hello",
+                "--set",
+                "user=:hej:"
+            ]
+        },
         "expected": {
-            "stdout": "https://%3ahej%3a@curl.se/hello",
+            "stdout": "https://%3ahej%3a@curl.se/hello\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "--url https://curl.se/hello --set user=hej --set password=secret",
+        "input": {
+            "arguments": [
+                "--url",
+                "https://curl.se/hello",
+                "--set",
+                "user=hej",
+                "--set",
+                "password=secret"
+            ]
+        },
         "expected": {
-            "stdout": "https://hej:secret@curl.se/hello",
+            "stdout": "https://hej:secret@curl.se/hello\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "--url https://curl.se/hello --set query:=user=me",
+        "input": {
+            "arguments": [
+                "--url",
+                "https://curl.se/hello",
+                "--set",
+                "query:=user=me"
+            ]
+        },
         "expected": {
-            "stdout": "https://curl.se/hello?user=me",
+            "stdout": "https://curl.se/hello?user=me\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "--url https://curl.se/hello --set query=user=me",
+        "input": {
+            "arguments": [
+                "--url",
+                "https://curl.se/hello",
+                "--set",
+                "query=user=me"
+            ]
+        },
         "expected": {
-            "stdout": "https://curl.se/hello?user%3dme",
+            "stdout": "https://curl.se/hello?user%3dme\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "--url https://curl.se/hello --set fragment=\" hello\"",
+        "input": {
+            "arguments": [
+                "--url",
+                "https://curl.se/hello",
+                "--set",
+                "fragment= hello"
+            ]
+        },
         "expected": {
-            "stdout": "https://curl.se/hello#%20hello",
+            "stdout": "https://curl.se/hello#%20hello\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "--url https://curl.se/hello --set fragment:=\"%20hello\"",
+        "input": {
+            "arguments": [
+                "--url",
+                "https://curl.se/hello",
+                "--set",
+                "fragment:=%20hello"
+            ]
+        },
         "expected": {
-            "stdout": "https://curl.se/hello#%20hello",
+            "stdout": "https://curl.se/hello#%20hello\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "localhost --append query=hello=foo",
+        "input": {
+            "arguments": [
+                "localhost",
+                "--append",
+                "query=hello=foo"
+            ]
+        },
         "expected": {
-            "stdout": "http://localhost/?hello=foo",
+            "stdout": "http://localhost/?hello=foo\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "localhost -a query=hello=foo",
+        "input": {
+            "arguments": [
+                "localhost",
+                "-a",
+                "query=hello=foo"
+            ]
+        },
         "expected": {
-            "stdout": "http://localhost/?hello=foo",
+            "stdout": "http://localhost/?hello=foo\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "\"https://example.com?search=hello&utm_source=tracker\" --trim query=\"utm_*\"",
+        "input": {
+            "arguments": [
+                "https://example.com?search=hello&utm_source=tracker",
+                "--trim",
+                "query=utm_*"
+            ]
+        },
         "expected": {
-            "stdout": "https://example.com/?search=hello",
+            "stdout": "https://example.com/?search=hello\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "\"https://example.com?search=hello&utm_source=tracker&more=data\" --trim query=\"utm_*\"",
+        "input": {
+            "arguments": [
+                "https://example.com?search=hello&utm_source=tracker&more=data",
+                "--trim",
+                "query=utm_*"
+            ]
+        },
         "expected": {
-            "stdout": "https://example.com/?search=hello&more=data",
+            "stdout": "https://example.com/?search=hello&more=data\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "\"https://example.com?search=hello&more=data\" --trim query=\"utm_*\"",
+        "input": {
+            "arguments": [
+                "https://example.com?search=hello&more=data",
+                "--trim",
+                "query=utm_*"
+            ]
+        },
         "expected": {
-            "stdout": "https://example.com/?search=hello&more=data",
+            "stdout": "https://example.com/?search=hello&more=data\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "\"https://example.com?utm_source=tracker\" --trim query=\"utm_*\"",
+        "input": {
+            "arguments": [
+                "https://example.com?utm_source=tracker",
+                "--trim",
+                "query=utm_*"
+            ]
+        },
         "expected": {
-            "stdout": "https://example.com/",
+            "stdout": "https://example.com/\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "\"https://example.com?search=hello&utm_source=tracker&more=data\" --trim query=\"utm_source\"",
+        "input": {
+            "arguments": [
+                "https://example.com?search=hello&utm_source=tracker&more=data",
+                "--trim",
+                "query=utm_source"
+            ]
+        },
         "expected": {
-            "stdout": "https://example.com/?search=hello&more=data",
+            "stdout": "https://example.com/?search=hello&more=data\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "\"https://example.com?search=hello&utm_source=tracker&more=data\" --trim query=\"utm_source\" --trim query=more --trim query=search",
+        "input": {
+            "arguments": [
+                "https://example.com?search=hello&utm_source=tracker&more=data",
+                "--trim",
+                "query=utm_source",
+                "--trim",
+                "query=more",
+                "--trim",
+                "query=search"
+            ]
+        },
         "expected": {
-            "stdout": "https://example.com/",
+            "stdout": "https://example.com/\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "--accept-space --url \"gopher://localhost/ with space\"",
+        "input": {
+            "arguments": [
+                "--accept-space",
+                "--url",
+                "gopher://localhost/ with space"
+            ]
+        },
         "expected": {
-            "stdout": "gopher://localhost/%20with%20space",
+            "stdout": "gopher://localhost/%20with%20space\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "--accept-space --url \"https://localhost/?with space\"",
+        "input": {
+            "arguments": [
+                "--accept-space",
+                "--url",
+                "https://localhost/?with space"
+            ]
+        },
         "expected": {
-            "stdout": "https://localhost/?with+space",
+            "stdout": "https://localhost/?with+space\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "https://daniel@curl.se:22/ -s port= -s user=",
+        "input": {
+            "arguments": [
+                "https://daniel@curl.se:22/",
+                "-s",
+                "port=",
+                "-s",
+                "user="
+            ]
+        },
         "expected": {
-            "stdout": "https://curl.se/",
+            "stdout": "https://curl.se/\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "\"https://example.com?moo&search=hello\" --trim query=search",
+        "input": {
+            "arguments": [
+                "https://example.com?moo&search=hello",
+                "--trim",
+                "query=search"
+            ]
+        },
         "expected": {
-            "stdout": "https://example.com/?moo",
+            "stdout": "https://example.com/?moo\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "\"https://example.com?search=hello&moo\" --trim query=search",
+        "input": {
+            "arguments": [
+                "https://example.com?search=hello&moo",
+                "--trim",
+                "query=search"
+            ]
+        },
         "expected": {
-            "stdout": "https://example.com/?moo",
+            "stdout": "https://example.com/?moo\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "\"https://example.com?search=hello\" --trim query=search --append query=moo",
+        "input": {
+            "arguments": [
+                "https://example.com?search=hello",
+                "--trim",
+                "query=search",
+                "--append",
+                "query=moo"
+            ]
+        },
         "expected": {
-            "stdout": "https://example.com/?moo",
+            "stdout": "https://example.com/?moo\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "https://hello:443/foo",
+        "input": {
+            "arguments": [
+                "https://hello:443/foo"
+            ]
+        },
         "expected": {
-            "stdout": "https://hello/foo",
+            "stdout": "https://hello/foo\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "ftp://hello:21/foo",
+        "input": {
+            "arguments": [
+                "ftp://hello:21/foo"
+            ]
+        },
         "expected": {
-            "stdout": "ftp://hello/foo",
+            "stdout": "ftp://hello/foo\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "https://hello:443/foo -s scheme=ftp",
+        "input": {
+            "arguments": [
+                "https://hello:443/foo",
+                "-s",
+                "scheme=ftp"
+            ]
+        },
         "expected": {
-            "stdout": "ftp://hello:443/foo",
+            "stdout": "ftp://hello:443/foo\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "ftp://hello:443/foo -s scheme=https",
+        "input": {
+            "arguments": [
+                "ftp://hello:443/foo",
+                "-s",
+                "scheme=https"
+            ]
+        },
         "expected": {
-            "stdout": "https://hello/foo",
+            "stdout": "https://hello/foo\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "\"https://example.com?utm_source=tra%20cker&address%20=home&here=now&thisthen\" -g {query:utm_source}",
+        "input": {
+            "arguments": [
+                "https://example.com?utm_source=tra%20cker&address%20=home&here=now&thisthen",
+                "-g",
+                "{query:utm_source}"
+            ]
+        },
         "expected": {
-            "stdout": "tra cker",
+            "stdout": "tra cker\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "\"https://example.com?utm_source=tra%20cker&address%20=home&here=now&thisthen\" -g {:query:utm_source}",
+        "input": {
+            "arguments": [
+                "https://example.com?utm_source=tra%20cker&address%20=home&here=now&thisthen",
+                "-g",
+                "{:query:utm_source}"
+            ]
+        },
         "expected": {
-            "stdout": "tra%20cker",
+            "stdout": "tra%20cker\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "https://example.com?utm_source=tra%20cker&address%20=home&here=now&thisthen -g {:query:utm_}",
+        "input": {
+            "arguments": [
+                "https://example.com?utm_source=tra%20cker&address%20=home&here=now&thisthen",
+                "-g",
+                "{:query:utm_}"
+            ]
+        },
         "expected": {
-            "stdout": "",
+            "stdout": "\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "\"https://example.com?utm_source=tra%20cker&address%20=home&here=now&thisthen\" -g {:query:UTM_SOURCE}",
+        "input": {
+            "arguments": [
+                "https://example.com?utm_source=tra%20cker&address%20=home&here=now&thisthen",
+                "-g",
+                "{:query:UTM_SOURCE}"
+            ]
+        },
         "expected": {
-            "stdout": "",
+            "stdout": "\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "\"https://example.com?utm_source=tracker&monkey=123\" --sort-query",
+        "input": {
+            "arguments": [
+                "https://example.com?utm_source=tracker&monkey=123",
+                "--sort-query"
+            ]
+        },
         "expected": {
-            "stdout": "https://example.com/?monkey=123&utm_source=tracker",
+            "stdout": "https://example.com/?monkey=123&utm_source=tracker\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "\"https://example.com?a=b&c=d&\" --sort-query",
+        "input": {
+            "arguments": [
+                "https://example.com?a=b&c=d&",
+                "--sort-query"
+            ]
+        },
         "expected": {
-            "stdout": "https://example.com/?a=b&c=d",
+            "stdout": "https://example.com/?a=b&c=d\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "\"https://example.com?a=b&c=d&\" --sort-query --trim query=a ",
+        "input": {
+            "arguments": [
+                "https://example.com?a=b&c=d&",
+                "--sort-query",
+                "--trim",
+                "query=a"
+            ]
+        },
         "expected": {
-            "stdout": "https://example.com/?c=d",
+            "stdout": "https://example.com/?c=d\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "example.com:29 --set port=",
+        "input": {
+            "arguments": [
+                "example.com:29",
+                "--set",
+                "port="
+            ]
+        },
         "expected": {
-            "stdout": "http://example.com/",
+            "stdout": "http://example.com/\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "--url HTTPS://example.com",
+        "input": {
+            "arguments": [
+                "--url",
+                "HTTPS://example.com"
+            ]
+        },
         "expected": {
-            "stdout": "https://example.com/",
+            "stdout": "https://example.com/\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "--url https://EXAMPLE.com",
+        "input": {
+            "arguments": [
+                "--url",
+                "https://EXAMPLE.com"
+            ]
+        },
         "expected": {
-            "stdout": "https://EXAMPLE.com/",
+            "stdout": "https://EXAMPLE.com/\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "--url https://example.com/FOO/BAR",
+        "input": {
+            "arguments": [
+                "--url",
+                "https://example.com/FOO/BAR"
+            ]
+        },
         "expected": {
-            "stdout": "https://example.com/FOO/BAR",
+            "stdout": "https://example.com/FOO/BAR\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "--url [2001:0db8:0000:0000:0000:ff00:0042:8329]",
+        "input": {
+            "arguments": [
+                "--url",
+                "[2001:0db8:0000:0000:0000:ff00:0042:8329]"
+            ]
+        },
         "expected": {
-            "stdout": "http://[2001:db8::ff00:42:8329]/",
+            "stdout": "http://[2001:db8::ff00:42:8329]/\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "\"https://example.com?utm=tra%20cker:address%20=home:here=now:thisthen\" --sort-query --query-separator \":\"",
+        "input": {
+            "arguments": [
+                "https://example.com?utm=tra%20cker:address%20=home:here=now:thisthen",
+                "--sort-query",
+                "--query-separator",
+                ":"
+            ]
+        },
         "expected": {
-            "stdout": "https://example.com/?address%20=home:here=now:thisthen:utm=tra%20cker",
+            "stdout": "https://example.com/?address%20=home:here=now:thisthen:utm=tra%20cker\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "\"foo?a=bCd=eCe=f\" --query-separator C --trim query=d",
+        "input": {
+            "arguments": [
+                "foo?a=bCd=eCe=f",
+                "--query-separator",
+                "C",
+                "--trim",
+                "query=d"
+            ]
+        },
         "expected": {
-            "stdout": "http://foo/?a=bCe=f",
+            "stdout": "http://foo/?a=bCe=f\n",
             "stderr": "",
             "returncode": 0
         }
     },
     {
-        "cmdline": "localhost -g '{scheme} {host'",
+        "input": {
+            "arguments": [
+                "localhost",
+                "-g",
+                "{scheme} {host"
+            ]
+        },
         "expected": {
             "stderr": "",
             "returncode": 0,
-            "stdout": "http {host"
+            "stdout": "http {host\n"
         }
     },
     {
-        "cmdline": "localhost -g '[scheme] [host'",
+        "input": {
+            "arguments": [
+                "localhost",
+                "-g",
+                "[scheme] [host"
+            ]
+        },
         "expected": {
             "stderr": "",
             "returncode": 0,
-            "stdout": "http [host"
+            "stdout": "http [host\n"
         }
     },
     {
-        "cmdline": "localhost -g '\\{{scheme}\\['",
+        "input": {
+            "arguments": [
+                "localhost",
+                "-g",
+                "\\{{scheme}\\["
+            ]
+        },
         "expected": {
             "stderr": "",
             "returncode": 0,
-            "stdout": "{http["
+            "stdout": "{http[\n"
         }
     },
     {
-        "cmdline": "localhost -g '\\\\['",
+        "input": {
+            "arguments": [
+                "localhost",
+                "-g",
+                "\\\\["
+            ]
+        },
         "expected": {
             "stderr": "",
             "returncode": 0,
-            "stdout": "\\["
+            "stdout": "\\[\n"
         }
     },
     {
-        "cmdline": "https://u:s@foo?moo -g '[scheme][user][password][query]'",
+        "input": {
+            "arguments": [
+                "https://u:s@foo?moo",
+                "-g",
+                "[scheme][user][password][query]"
+            ]
+        },
         "expected": {
             "stderr": "",
             "returncode": 0,
-            "stdout": "httpsusmoo"
+            "stdout": "httpsusmoo\n"
         }
     },
     {
-        "cmdline": "\"hej?a=b&a=c&a=d&b=a\" -g '{query-all:a}'",
+        "input": {
+            "arguments": [
+                "hej?a=b&a=c&a=d&b=a",
+                "-g",
+                "{query-all:a}"
+            ]
+        },
         "expected": {
             "stderr": "",
             "returncode": 0,
-            "stdout": "b c d"
+            "stdout": "b c d\n"
         }
     },
     {
-        "cmdline": "https://curl.se?name=mr%00smith --get {query:name}",
+        "input": {
+            "arguments": [
+                "https://curl.se?name=mr%00smith",
+                "--get",
+                "{query:name}"
+            ]
+        },
         "expected": {
             "stderr": "",
             "returncode": 0,
-            "stdout": "mr.smith"
+            "stdout": "mr.smith\n"
         }
     },
     {
-        "cmdline": "https://curl.se --iterate \"port=80 81 443\"",
+        "input": {
+            "arguments": [
+                "https://curl.se",
+                "--iterate",
+                "port=80 81 443"
+            ]
+        },
         "expected": {
             "stderr": "",
             "returncode": 0,
-            "stdout": "https://curl.se:80/\nhttps://curl.se:81/\nhttps://curl.se/"
+            "stdout": "https://curl.se:80/\nhttps://curl.se:81/\nhttps://curl.se/\n"
         }
     },
     {
-        "cmdline": "https://curl.se --iterate 'port=81 443' --iterate scheme='sftp moo'",
+        "input": {
+            "arguments": [
+                "https://curl.se",
+                "--iterate",
+                "port=81 443",
+                "--iterate",
+                "scheme=sftp moo"
+            ]
+        },
         "expected": {
             "stderr": "",
             "returncode": 0,
-            "stdout": "sftp://curl.se:81/\nmoo://curl.se:81/\nsftp://curl.se:443/\nmoo://curl.se:443/"
+            "stdout": "sftp://curl.se:81/\nmoo://curl.se:81/\nsftp://curl.se:443/\nmoo://curl.se:443/\n"
         }
     },
     {
-        "cmdline": "https://curl.se --iterate 'port=81 443'  --iterate scheme='sftp moo' --iterate port='2 1'",
+        "input": {
+            "arguments": [
+                "https://curl.se",
+                "--iterate",
+                "port=81 443",
+                "--iterate",
+                "scheme=sftp moo",
+                "--iterate",
+                "port=2 1"
+            ]
+        },
         "expected": {
-            "stderr": "trurl error: duplicate component for iterate: port\ntrurl error: Try trurl -h for help",
+            "stderr": "trurl error: duplicate component for iterate: port\ntrurl error: Try trurl -h for help\n",
             "returncode": 11,
             "stdout": ""
         }
     },
     {
-        "cmdline": "https://curl.se -s host=localhost --iterate port='22 23'",
+        "input": {
+            "arguments": [
+                "https://curl.se",
+                "-s",
+                "host=localhost",
+                "--iterate",
+                "port=22 23"
+            ]
+        },
         "expected": {
             "stderr": "",
             "returncode": 0,
-            "stdout": "https://localhost:22/\nhttps://localhost:23/"
+            "stdout": "https://localhost:22/\nhttps://localhost:23/\n"
         }
     },
     {
-        "cmdline": "localhost --iterate host='one two' -g '{host} {port}'",
+        "input": {
+            "arguments": [
+                "localhost",
+                "--iterate",
+                "host=one two",
+                "-g",
+                "{host} {port}"
+            ]
+        },
         "expected": {
             "stderr": "",
             "returncode": 0,
-            "stdout": "one 80\ntwo 80"
+            "stdout": "one 80\ntwo 80\n"
         }
     },
     {
-        "cmdline": "\"https://example.com?utm=tra%20cker&address%20=home&here=now&thisthen\" --json",
+        "input": {
+            "arguments": [
+                "https://example.com?utm=tra%20cker&address%20=home&here=now&thisthen",
+                "--json"
+            ]
+        },
         "expected": {
             "stderr": "",
             "returncode": 0,
@@ -739,7 +1303,12 @@
         }
     },
     {
-        "cmdline": "ftp://smith:secret@example.com:33/path?search=me#where --json",
+        "input": {
+            "arguments": [
+                "ftp://smith:secret@example.com:33/path?search=me#where",
+                "--json"
+            ]
+        },
         "expected": {
             "stderr": "",
             "returncode": 0,
@@ -765,7 +1334,12 @@
         }
     },
     {
-        "cmdline": "example.com --json",
+        "input": {
+            "arguments": [
+                "example.com",
+                "--json"
+            ]
+        },
         "expected": {
             "stderr": "",
             "returncode": 0,
@@ -781,7 +1355,13 @@
         }
     },
     {
-        "cmdline": "example.com other.com --json",
+        "input": {
+            "arguments": [
+                "example.com",
+                "other.com",
+                "--json"
+            ]
+        },
         "expected": {
             "stderr": "",
             "returncode": 0,
@@ -804,7 +1384,14 @@
         }
     },
     {
-        "cmdline": "localhost --iterate host=\"one two\" --json",
+        "input": {
+            "arguments": [
+                "localhost",
+                "--iterate",
+                "host=one two",
+                "--json"
+            ]
+        },
         "expected": {
             "stderr": "",
             "returncode": 0,
