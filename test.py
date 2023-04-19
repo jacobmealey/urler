@@ -110,6 +110,7 @@ def main():
 
     for arg in sys.argv[1:]:
         if arg[0].isnumeric():
+            # run only test cases separated by ","
             testIndexesToRun = []
 
             for caseIndex in arg.split(","):
