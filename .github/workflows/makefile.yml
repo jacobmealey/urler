@@ -14,6 +14,7 @@ jobs:
       matrix:
         build:
         - name: default
+          install_packages: valgrind
           test: test-memory
         - name: clang sanitizers
           install_packages: clang
@@ -30,8 +31,7 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install libcurl4-openssl-dev ${{ matrix.build.install_packages }}
-    - name: install valgrind
-      run: sudo apt-get install valgrind
+
     - name: code style check
       run: make checksrc
 
