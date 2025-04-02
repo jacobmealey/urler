@@ -1,0 +1,34 @@
+#!/bin/bash
+
+DELAY=${1-'1'}
+
+HOSTNAMES=(
+    'google.com' \
+    'curl.se' \
+    'www.gnu.org' \
+    'github.com' \
+)
+
+PATHS=(
+    '' \
+    '/some/file' \
+    '/index.html' \
+    '/docs/' \
+)
+
+SCHEMES=(
+    'ftp' \
+    'sftp' \
+    'http' \
+)
+
+while true; do
+    # this should ideally be a released version not the one
+    # currently being built.
+    trurl --set host="${HOSTNAMES[ $RANDOM % ${#HOSTNAMES[@]} ]}" \
+          --set path="${PATHS[ $RANDOM % ${#PATHS[@]} ]}" \
+          --set scheme="${SCHEMES[ $RANDOM % ${#SCHEMES[@]} ]}" \
+            
+    #sleep $DELAY
+done
+
