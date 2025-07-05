@@ -316,7 +316,9 @@ static void show_version(void)
 #ifdef SUPPORTS_ZONEID
   fprintf(stdout, " zone-id");
 #endif
-
+#if CURL_AT_LEAST_VERSION(8,15,0)
+  fprintf(stdout, " uppercase-hex");
+#endif
   fprintf(stdout, "\n");
   exit(0);
 }
