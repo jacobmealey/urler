@@ -71,7 +71,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: make
-        run: make
+        run: CFLAGS="-g" make
 
       - name: sanity test
         run: ./trurl -v
